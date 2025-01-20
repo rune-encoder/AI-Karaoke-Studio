@@ -1,10 +1,12 @@
 # Third-Party Imports
 from faster_whisper import WhisperModel
 
+# Local Application Imports
 from .config import MODEL_SIZE, DEVICE, COMPUTE_TYPE
 
 # Initialize Whisper model globally to avoid reloading it multiple times
 MODEL = WhisperModel(MODEL_SIZE, device=DEVICE, compute_type=COMPUTE_TYPE)
+
 
 def _extract_lyrics_with_timing(audio_path):
     """

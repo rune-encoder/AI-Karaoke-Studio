@@ -1,9 +1,11 @@
+# Standard Library Imports
 from pathlib import Path
 import subprocess as sp
 import logging
 import shutil
 
-logging.basicConfig(level=logging.INFO)
+# Initialize Logger
+logger = logging.getLogger(__name__)
 
 def _organize_outputs(output_path):
     """
@@ -54,17 +56,11 @@ def _execute_command(cmd):
         # Handle the I/O streams of the process, capturing stdout and stderr
         stdout, stderr = process.communicate()
 
-        # if stdout:
-        #     sys.stdout.write(stdout.decode())
-
-        # if stderr:
-        #     sys.stderr.write(stderr.decode())
-
         if stdout:
-            logging.info(stdout.decode())
+            logger.debug(stdout.decode())
 
         if stderr:
-            logging.warning(stderr.decode())
+            logger.warning(stderr.decode())
 
         # Wait for the process to finish
         process.wait()
