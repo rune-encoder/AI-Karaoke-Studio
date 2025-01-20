@@ -1,13 +1,15 @@
-# ════════════════════════════════════════════════════════════
-# IMPORTS
-# ════════════════════════════════════════════════════════════
+# Standard Library Imports
 from pathlib import Path
+from typing import Union
 import logging
 import hashlib
-from typing import Union
+
+# Local Application Imports
 from .config import EXTENSIONS
 
-logging.basicConfig(level=logging.INFO)
+# Initialize Logger
+logger = logging.getLogger(__name__)
+
 
 # ════════════════════════════════════════════════════════════
 # HELPER FUNCTIONS
@@ -28,9 +30,7 @@ def create_directory(path):
     # Create the directory if it does not exist
     if not path.exists():
         path.mkdir(parents=True, exist_ok=True)
-        logging.info(f"Created directory: {path}")
-    else:
-        logging.debug(f"Directory already exists: {path}")
+        logger.debug(f"Created directory: `./{path.stem}`")
     return path
 
 
@@ -43,6 +43,7 @@ def ensure_file_exists(file_path: Union[str, Path], error_message: str = "File n
         error_message (str): Error message to display if the file is not found.
     """
     if not Path(file_path).exists():
+        logger.error(f"{error_message}: {file_path}")
         raise FileNotFoundError(f"{error_message}: {file_path}")
 
 
@@ -60,11 +61,11 @@ def validate_audio_file(file_path):
 
     # Check if the file exists and has a valid extension
     if not file.exists():
-        logging.error(f"Audio file not found: {file_path}")
+        logger.error(f"Audio file not found: {file_path}")
         return False
-    
+
     if file.suffix.lower().lstrip(".") not in EXTENSIONS:
-        logging.error(f"Unsupported file extension: {file.suffix}")
+        logger.error(f"Unsupported file extension: {file.suffix}")
         return False
     return True
 
@@ -81,15 +82,15 @@ def get_file_hash(file_path):
     """
     # Create a new SHA256 hash object
     hash_func = hashlib.sha256()
-    
+
     # Open the file in binary read mode
     with open(file_path, 'rb') as f:
 
         # Read the file in chunks of 8192 bytes
         while chunk := f.read(8192):
-            
+
             # Update the hash object with the chunk
             hash_func.update(chunk)
-    
+
     # Return the hexadecimal representation of the hash
     return hash_func.hexdigest()

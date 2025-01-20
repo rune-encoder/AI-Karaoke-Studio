@@ -1,10 +1,14 @@
-import logging
+# Standard Library Imports
 from pathlib import Path
 from typing import Union
+import logging
 
+# Local Application Imports
 from .main import _audio_stem_separation
 
-logging.basicConfig(level=logging.INFO)
+# Initialize Logger
+logger = logging.getLogger(__name__)
+
 
 def process_audio_stem_separation(
     input_file: Union[str, Path],
@@ -13,14 +17,16 @@ def process_audio_stem_separation(
 ):
     expected_stems = ['vocals', 'drums', 'bass', 'other']
 
-    # Check if any of the expected stem files already exist in the directory
+    # Check if any of the expected stem files already exist in the directory and
+    # skip the separation if the override flag is not set
     if not override:
         for file in Path(output_path).iterdir():
             if file.is_file() and file.stem.lower() in expected_stems:
-                logging.info(
-                    "Stem files already exist. Use override=True to regenerate them.")
+                logger.info(
+                    "Skipping stem separation... Audio stems already exist in the output directory...")
                 return
 
+    # Perform audio stem separation
     _audio_stem_separation(
         input_file,
         output_path,

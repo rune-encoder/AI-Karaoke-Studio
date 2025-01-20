@@ -12,21 +12,24 @@ https://colab.research.google.com/drive/1dC9nVxk3V_VPjUADsnFu8EiT-xnU1tGH?usp=sh
 Reference Model Source from GitHub:
 https://github.com/facebookresearch/demucs
 """
+# Standard Library Imports
 from pathlib import Path
-import logging
 from typing import Union
+import logging
 
-# Third-Party Libraries
+# Third-Party Imports
 import torch
 
+# Local Application Imports
+from .config import AudioSeparationConfig
 from .utilities import (
     _execute_command,
     _organize_outputs,
 )
 
-from .config import AudioSeparationConfig
+# Initialize Logger
+logger = logging.getLogger(__name__)
 
-logging.basicConfig(level=logging.INFO)
 
 def _audio_stem_separation(
     input_file: Union[str, Path],
@@ -62,18 +65,17 @@ def _audio_stem_separation(
             cmd += [f"--two-stems={config.two_stems}"]
 
         cmd.append(str(input_path))
+        logger.debug(f"Executing command: {' '.join(cmd)}")
 
-        logging.info(f"Executing command: {' '.join(cmd)}")
-
-        #! Execute the command to separate the audio stems using subprocess
+        # Execute the command to separate the audio stems using subprocess
         if not _execute_command(cmd):
             # Early exit if the command fails
             return None
 
-        #! Organize the output files
+        # Organize the output files removing them from subdirectories
         _organize_outputs(output_path)
-        return True
+        logger.info(f"Audio stems separated successfully!")
 
     except Exception as e:
-        logging.error(f"Error in stem separation: {e}")
-        return False
+        logger.error(f"Error in stem separation: {e}")
+        raise RuntimeError(f"Error in stem separation: {e}")
