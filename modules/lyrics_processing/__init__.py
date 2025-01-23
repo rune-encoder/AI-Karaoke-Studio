@@ -1,1 +1,3 @@
 from .extract_lyrics import process_audio_extract_lyric_timing
+from .search_lyrics import process_lyric_search
+from .modify_lyrics import process_lyrics_modification
