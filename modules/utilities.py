@@ -2,6 +2,7 @@
 from pathlib import Path
 from typing import Union
 import logging
+import json
 
 # Initialize Logger
 logger = logging.getLogger(__name__)
@@ -25,3 +26,13 @@ def ensure_file_exists(file_path: Union[str, Path], error_message: str = "File n
     if not Path(file_path).exists():
         logger.error(f"{error_message}: {file_path}")
         raise FileNotFoundError(f"{error_message}: {file_path}")
+
+
+def load_json(file_path: Path) -> dict:
+    with open(file_path, "r") as file:
+        return json.load(file)
+
+
+def save_json(data: dict, file_path: Path) -> None:
+    with open(file_path, "w") as file:
+        json.dump(data, file, indent=4)
