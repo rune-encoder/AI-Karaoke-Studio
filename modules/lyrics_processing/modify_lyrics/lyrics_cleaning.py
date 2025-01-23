@@ -1,6 +1,6 @@
 # Standard Library Imports
 import re
-
+from pprint import pprint
 
 def _condense_raw_lyrics(raw_lyrics):
     """
@@ -25,6 +25,7 @@ def _condense_raw_lyrics(raw_lyrics):
                 }
                 filtered_words.append(filtered_word)
 
+    pprint(filtered_words, sort_dicts=False)
     return filtered_words
 
 

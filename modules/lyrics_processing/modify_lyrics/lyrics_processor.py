@@ -1,7 +1,7 @@
 # Standard Library Imports
 import logging
-from pprint import pprint
 import json
+from pprint import pprint
 
 # Third-Party Imports
 from pydantic import ValidationError
@@ -147,8 +147,11 @@ def _process_lyrics_in_chunks(raw_lyrics, corrected_lyrics, chunk_size=50):
         logger.info(f"Processing chunk {chunk_number}/{total_chunks}...")
 
         # Debug: Log the chunk and corresponding corrected lyrics
-        logger.debug(f"Raw Chunk {chunk_number}: {raw_chunk}")
-        logger.debug(f"Corrected Lyrics: {corrected_lyrics}")
+        logger.debug(f"Raw Chunk {chunk_number}")
+        pprint(raw_chunk, sort_dicts=False)
+
+        logger.debug(f"Official Lyrics Chunk {chunk_number}")
+        # pprint(corrected_lyrics, sort_dicts=False)
 
         # Generate the prompt for the current chunk
         prompt = generate_prompt(
@@ -160,7 +163,7 @@ def _process_lyrics_in_chunks(raw_lyrics, corrected_lyrics, chunk_size=50):
 
             # Validate and parse the cleaned response
             try:
-                parsed_response = _validate_and_parse_response(cleaned_content)
+                parsed_response = WordAlignmentList.model_validate_json(cleaned_content).root
 
             except ValidationError as ve:
                 logger.error(f"Validation error while processing chunk {chunk_number}/{total_chunks}: {ve.json()}")
@@ -169,7 +172,7 @@ def _process_lyrics_in_chunks(raw_lyrics, corrected_lyrics, chunk_size=50):
             # Append processed lyrics to the result and update the corrected lyrics
             aligned_lyrics.extend(parsed_response)
             corrected_lyrics = corrected_lyrics[len(parsed_response):]
-
+            pprint(corrected_lyrics, sort_dicts=False)
             logger.info(f"Successfully processed chunk {chunk_number}/{total_chunks}.")
 
         except Exception as e:

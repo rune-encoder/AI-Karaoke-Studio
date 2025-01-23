@@ -1,5 +1,6 @@
 # Standard Library Imports
 import logging
+from pprint import pprint
 
 # Local Application Imports
 from .lyrics_cleaning import _condense_raw_lyrics, _expand_gemini_lyrics
@@ -26,11 +27,15 @@ def _modify_lyrics_ai(raw_lyrics, official_lyrics):
         # Step 1: Condense raw lyrics into a simpler structure for processing
         compressed_raw_lyrics = _condense_raw_lyrics(raw_lyrics)
         logger.debug(f"Compressed raw lyrics for processing through AI")
+        pprint(compressed_raw_lyrics)
+        print("======================================")
 
         # Step 2: Flatten the official lyrics into a list of words
         compressed_official_lyrics = [
             word for verse in official_lyrics for word in verse.split()
         ]
+        pprint(compressed_official_lyrics)
+        print("======================================")
         logger.debug(f"Compressed official lyrics for processing through AI")
 
         # Step 3: Process the lyrics in chunks and align them
