@@ -2,12 +2,12 @@
 import logging
 
 # Local Application Imports
+from .config import GENIUS_API_TOKEN
 from .utilities import (
     _search_genius_lyrics,
     _scrape_genius_lyrics,
     _clean_genius_lyrics,
 )
-from .config import GENIUS_API_TOKEN
 
 # Initialize Logger
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ def _fetch_official_lyrics(metadata):
 
         if not url:
             logger.warning(f"No lyrics found for '{title}' by '{artist}'.")
-            return False
+            return 
         else:
             logger.debug(f"Lyrics found at URL: {url}")
 
@@ -47,7 +47,7 @@ def _fetch_official_lyrics(metadata):
         lyrics = _scrape_genius_lyrics(url)
         if not lyrics:
             logger.warning(f"Lyrics could not be scraped for '{title}' by '{artist}'.")
-            return False
+            return 
 
         # Clean the scraped lyrics
         cleaned_lyrics = _clean_genius_lyrics(lyrics)

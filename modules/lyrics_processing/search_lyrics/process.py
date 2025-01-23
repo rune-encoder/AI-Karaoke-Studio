@@ -1,10 +1,15 @@
-from .main import _fetch_official_lyrics
-import json
-import logging
+# Standard Library Imports
 from pathlib import Path
 from typing import Union
-logger = logging.getLogger(__name__)
+import logging
+import json
 
+# Local Application Imports
+from .main import _fetch_official_lyrics
+from ...utilities import load_json, save_json
+
+# Initialize Logger
+logger = logging.getLogger(__name__)
 
 def process_lyric_search(
     output_path: Union[str, Path],
@@ -24,22 +29,25 @@ def process_lyric_search(
     # Check if the file already exists in the output directory and
     # skip the search if the override flag is not set
     output_file = Path(output_path) / file_name
-    if output_file.exists() and not override or not metadata_file.exists():
+    if output_file.exists() and not override:
         logger.info(
             "Skipping lyric search... Official lyrics file already exists in the output directory."
         )
         return
+    
+    if not metadata_file.exists():
+        logger.error("Metadata file does not exist. Skipping lyric search...")
+        return
 
     try:
-        with metadata_file.open("r", encoding="utf-8") as f:
-            metadata = json.load(f)
+        # Load the audio metadata file
+        metadata = load_json(metadata_file)
 
         # Fetch official lyrics
         lyrics = _fetch_official_lyrics(metadata)
 
         # Save the lyrics as a JSON file
-        with output_file.open("w", encoding="utf-8") as f:
-            json.dump(lyrics, f, ensure_ascii=False, indent=4)
+        save_json(lyrics, output_file)
 
         logger.info("Official audio lyrics fetched and saved successfully!")
 

@@ -26,19 +26,23 @@ def _chunk_lyrics(lyrics, chunk_size):
     Returns:
         list: A list of chunks, where each chunk is a list containing a subset of the lyrics.
     """
-    # Validate inputs
-    if not isinstance(lyrics, list):
-        raise TypeError("The 'lyrics' parameter must be a list.")
+    try:
+        # Validate inputs
+        if not isinstance(lyrics, list):
+            raise TypeError("The 'lyrics' parameter must be a list.")
 
-    if not isinstance(chunk_size, int) or chunk_size <= 0:
-        raise ValueError(
-            "The 'chunk_size' parameter must be a positive integer.")
+        if not isinstance(chunk_size, int) or chunk_size <= 0:
+            raise ValueError("The 'chunk_size' parameter must be a positive integer.")
 
-    # Generate chunks by slicing the lyrics list
-    chunks = [lyrics[i:i + chunk_size]
-              for i in range(0, len(lyrics), chunk_size)]
+        # Generate chunks by slicing the lyrics list
+        chunks = [lyrics[i:i + chunk_size] for i in range(0, len(lyrics), chunk_size)]
 
-    return chunks
+        logger.debug(f"Chunked lyrics into {len(chunks)} chunks of size {chunk_size}.")
+        return chunks
+
+    except Exception as e:
+        logger.error(f"Error in _chunk_lyrics: {e}")
+        raise
 
 
 def _retry_with_chunks(prompt, max_retries=3):
@@ -59,6 +63,7 @@ def _retry_with_chunks(prompt, max_retries=3):
     for attempt in range(1, max_retries + 1):
         try:
             # Invoke the LLM with the provided prompt
+            logger.debug(f"Attempt {attempt}/{max_retries}: Sending prompt to the LLM.")
             response = llm.invoke(prompt)
 
             # Clean the response to ensure valid JSON
@@ -66,15 +71,14 @@ def _retry_with_chunks(prompt, max_retries=3):
 
             # Check if the cleaned response is valid (ends with "]" or "}")
             if cleaned_content.endswith("]") or cleaned_content.endswith("}"):
-                print(f"[Retry Attempt {attempt}] Valid Response Obtained.")
+                logger.debug(f"Valid response obtained on attempt {attempt}.")
                 return cleaned_content
             else:
-                print(
-                    f"[Retry Attempt {attempt}] Incomplete JSON, retrying...")
+                logger.warning(f"Incomplete JSON on attempt {attempt}, retrying...")
 
         except Exception as e:
             # Log the exception during the attempt
-            print(f"[Retry Attempt {attempt}] Failed with error: {e}")
+            logger.error(f"Error on attempt {attempt}: {e}")
 
     # Raise an error if all retry attempts fail
     raise RuntimeError(
@@ -106,14 +110,12 @@ def _validate_and_parse_response(cleaned_content):
 
     except ValidationError as ve:
         # Log detailed validation errors for debugging
-        print("[ERROR] Validation Error while parsing response:")
-        print(ve.json())  # Outputs detailed error messages in JSON format
+        logger.error(f"Validation error while parsing response: {ve.json()}")
         raise ve
 
     except json.JSONDecodeError as je:
         # Handle generic JSON decoding errors
-        print("[ERROR] JSON Decode Error while parsing response:")
-        print(str(je))
+        logger.error(f"JSON decode error: {je}")
         raise RuntimeError("Failed to decode JSON response.") from je
 
 
@@ -140,17 +142,13 @@ def _process_lyrics_in_chunks(raw_lyrics, corrected_lyrics, chunk_size=50):
     total_chunks = len(chunks)
     aligned_lyrics = []  # To store the final aligned lyrics
 
+    logger.info(f"Processing {total_chunks} chunks of raw lyrics.")
     for chunk_number, raw_chunk in enumerate(chunks, start=1):
-        print(f"\n--- Processing Chunk {chunk_number}/{total_chunks} ---")
+        logger.info(f"Processing chunk {chunk_number}/{total_chunks}...")
 
-        # Debug: Display the current chunk and corresponding corrected lyrics
-        print(
-            f"[INFO] Corrected Lyrics for Current Chunk: {chunk_number}/{total_chunks}")
-        pprint(corrected_lyrics, sort_dicts=False)
-
-        print(
-            f"[INFO] Raw Lyrics for Current Chunk: {chunk_number}/{total_chunks}")
-        pprint(raw_chunk, sort_dicts=False)
+        # Debug: Log the chunk and corresponding corrected lyrics
+        logger.debug(f"Raw Chunk {chunk_number}: {raw_chunk}")
+        logger.debug(f"Corrected Lyrics: {corrected_lyrics}")
 
         # Generate the prompt for the current chunk
         prompt = generate_prompt(
@@ -165,22 +163,19 @@ def _process_lyrics_in_chunks(raw_lyrics, corrected_lyrics, chunk_size=50):
                 parsed_response = _validate_and_parse_response(cleaned_content)
 
             except ValidationError as ve:
-                print("[ERROR] Validation Error Details:")
-                print(ve.json())  # Debugging validation errors
+                logger.error(f"Validation error while processing chunk {chunk_number}/{total_chunks}: {ve.json()}")
                 raise ve
-
-            # Debug: Display parsed response for the current chunk
-            print("[INFO] Parsed Response for Current Chunk:")
-            pprint(parsed_response)
 
             # Append processed lyrics to the result and update the corrected lyrics
             aligned_lyrics.extend(parsed_response)
             corrected_lyrics = corrected_lyrics[len(parsed_response):]
 
+            logger.info(f"Successfully processed chunk {chunk_number}/{total_chunks}.")
+
         except Exception as e:
-            print(
-                f"[ERROR] An error occurred while processing chunk {chunk_number}/{total_chunks}: {e}")
+            logger.error(f"Error processing chunk {chunk_number}: {e}")
             raise e
 
     # Return the combined list of aligned lyrics
+    logger.info("All chunks processed successfully.")
     return aligned_lyrics

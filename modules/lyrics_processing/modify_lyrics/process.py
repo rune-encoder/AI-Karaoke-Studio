@@ -1,9 +1,13 @@
-import json
+# Standard Library Imports
 from pathlib import Path
 from typing import Union
 import logging
-from .main import _modify_lyrics_ai
 
+# Local Application Imports
+from .main import _modify_lyrics_ai
+from ...utilities import load_json, save_json
+
+# Initialize Logger
 logger = logging.getLogger(__name__)
 
 def process_lyrics_modification(
@@ -27,7 +31,6 @@ def process_lyrics_modification(
         str: Path to the saved modified lyrics file.
     """
     try:
-
         official_lyrics_file = Path(output_path) / "official_lyrics.json"
         raw_lyrics_file = Path(output_path) / "raw_lyrics.json"
         output_file = Path(output_path) / file_name
@@ -49,22 +52,16 @@ def process_lyrics_modification(
             return
 
         # Step 3: Load the input files
-        logger.debug("Loading official and raw lyrics files...")
-        with official_lyrics_file.open("r", encoding="utf-8") as f:
-            official_lyrics = json.load(f)
-
-        with raw_lyrics_file.open("r", encoding="utf-8") as f:
-            raw_lyrics = json.load(f)
+        official_lyrics = load_json(official_lyrics_file)
+        raw_lyrics = load_json(raw_lyrics_file)
 
         # Step 4: Modify the lyrics using the AI
-        logger.debug("Starting lyrics modification process...")
         modified_lyrics = _modify_lyrics_ai(raw_lyrics, official_lyrics)
 
         # Step 5: Save the modified lyrics to the output file
-        with output_file.open("w", encoding="utf-8") as f:
-            json.dump(modified_lyrics, f, ensure_ascii=False, indent=4)
+        save_json(modified_lyrics, output_file)
+        logger.info("Lyrics ai modification completed and saved successfully!")
 
-        logger.info("Modified lyrics with AI saved successfully.")
         return
 
     except Exception as e:
