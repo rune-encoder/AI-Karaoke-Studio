@@ -26,16 +26,10 @@ def process_lyrics_modification(
         output_path (Union[str, Path]): Directory to save the modified lyrics.
         override (bool): Whether to override the file if it already exists.
         file_name (str): Name of the output file to save the modified lyrics.
-
-    Returns:
-        str: Path to the saved modified lyrics file.
     """
     try:
-        official_lyrics_file = Path(output_path) / "official_lyrics.json"
-        raw_lyrics_file = Path(output_path) / "raw_lyrics.json"
-        output_file = Path(output_path) / file_name
-
         # Step 1: Check if the output file already exists
+        output_file = Path(output_path) / file_name
         if output_file.exists() and not override:
             logger.info(
                 f"Skipping lyrics modification... AI modified lyrics file already exists in the output directory."
@@ -43,17 +37,19 @@ def process_lyrics_modification(
             return
 
         # Step 2: Ensure required input files exist
-        if not official_lyrics_file.exists():
-            logger.error(f"Official lyrics file does not exist. Skipping lyrics modification...")
-            return
-
+        raw_lyrics_file = Path(output_path) / "raw_lyrics.json"
         if not raw_lyrics_file.exists():
-            logger.error(f"Raw lyrics file does not exist. Skipping lyrics modification...")
+            logger.warning(f"Raw lyrics file does not exist. Skipping lyrics modification...")
+            return
+        
+        official_lyrics_file = Path(output_path) / "official_lyrics.json"
+        if not official_lyrics_file.exists():
+            logger.warning(f"Official lyrics file does not exist. Skipping lyrics modification...")
             return
 
         # Step 3: Load the input files
-        official_lyrics = load_json(official_lyrics_file)
         raw_lyrics = load_json(raw_lyrics_file)
+        official_lyrics = load_json(official_lyrics_file)
 
         # Step 4: Modify the lyrics using the AI
         modified_lyrics = _modify_lyrics_ai(raw_lyrics, official_lyrics)

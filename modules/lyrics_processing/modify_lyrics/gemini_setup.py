@@ -13,7 +13,7 @@ llm = ChatGoogleGenerativeAI(
 )
 
 
-def generate_prompt(raw_lyrics, correct_lyrics, chunk_number, total_chunks):
+def generate_prompt(raw_lyrics, reference_lyrics, chunk_number, total_chunks):
     PROMPT = f"""
 {PREFIX}
 
@@ -35,7 +35,7 @@ RAW LYRICS:
 
 CORRECTED LYRICS:
 ===================
-{correct_lyrics}
+{reference_lyrics}
 
 EXPECTATIONS:
 ===================

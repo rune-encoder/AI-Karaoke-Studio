@@ -97,11 +97,11 @@ class WordAlignment(BaseModel):
     word: str = Field(..., description="The word from the lyrics.")
     start: float = Field(
         ...,
-        description="The start time of the word in seconds. Adjust only if the corrected lyrics require word splitting or merging."
+        description="The start time of the word in seconds. Do not modify. Must be a float."
     )
     end: float = Field(
         ...,
-        description="The end time of the word in seconds. Adjust only if the corrected lyrics require word splitting or merging."
+        description="The end time of the word in seconds. Do not modify. Must be a float."
     )
 
 # Define a schema for a list of WordAlignment objects

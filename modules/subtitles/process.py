@@ -3,6 +3,7 @@
 from pathlib import Path
 from typing import Union
 import logging
+from pprint import pprint
 
 # Local Application Imports
 from .config import get_available_colors, get_font_list
@@ -39,7 +40,7 @@ def process_karaoke_subtitles(
         
         # Load the lyrics
         lyrics = load_json(lyrics_file)
-        print(lyrics)
+        pprint(lyrics, sort_dicts=False)
 
         # Extract audio duration (assuming you have an input file for the instrumental audio)
         audio_duration = extract_audio_duration(audio_file)

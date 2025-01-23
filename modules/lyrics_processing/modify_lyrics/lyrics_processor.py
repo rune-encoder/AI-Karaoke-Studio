@@ -1,7 +1,7 @@
 # Standard Library Imports
 import logging
 import json
-from pprint import pprint
+import time
 
 # Third-Party Imports
 from pydantic import ValidationError
@@ -27,17 +27,19 @@ def _chunk_lyrics(lyrics, chunk_size):
         list: A list of chunks, where each chunk is a list containing a subset of the lyrics.
     """
     try:
-        # Validate inputs
+        # Confirm that the lyrics parameter is a list (of words, phrases, or objects)
         if not isinstance(lyrics, list):
             raise TypeError("The 'lyrics' parameter must be a list.")
-
+        
+        # Confirm that the chunk_size parameter is a positive integer
         if not isinstance(chunk_size, int) or chunk_size <= 0:
             raise ValueError("The 'chunk_size' parameter must be a positive integer.")
 
         # Generate chunks by slicing the lyrics list
         chunks = [lyrics[i:i + chunk_size] for i in range(0, len(lyrics), chunk_size)]
+        logger.debug(f"Chunked lyrics into {len(chunks)} chunks, each with up to {chunk_size} words.")
 
-        logger.debug(f"Chunked lyrics into {len(chunks)} chunks of size {chunk_size}.")
+        # Output => List[List[dict]]
         return chunks
 
     except Exception as e:
@@ -45,7 +47,7 @@ def _chunk_lyrics(lyrics, chunk_size):
         raise
 
 
-def _retry_with_chunks(prompt, max_retries=3):
+def _invoke_with_retries(prompt, max_retries=3, delay_between_retries=1):
     """
     Attempts to send a prompt to the LLM (Language Model) multiple times, 
     cleaning and validating the response after each attempt.
@@ -53,6 +55,7 @@ def _retry_with_chunks(prompt, max_retries=3):
     Args:
         prompt (str): The generated prompt to send to the LLM.
         max_retries (int): The maximum number of retry attempts for obtaining a valid response.
+        delay_between_retries (int): The time in seconds to wait between retries to avoid spamming the LLM.
 
     Returns:
         str: The cleaned and validated response content from the LLM.
@@ -62,23 +65,28 @@ def _retry_with_chunks(prompt, max_retries=3):
     """
     for attempt in range(1, max_retries + 1):
         try:
-            # Invoke the LLM with the provided prompt
+            # Attempt to invoke the LLM with the provided prompt
             logger.debug(f"Attempt {attempt}/{max_retries}: Sending prompt to the LLM.")
             response = llm.invoke(prompt)
 
-            # Clean the response to ensure valid JSON
-            cleaned_content = _clean_gemini_response(response.content)
+            # Clean the response to ensure it is valid JSON
+            cleaned_response = _clean_gemini_response(response.content)
 
             # Check if the cleaned response is valid (ends with "]" or "}")
-            if cleaned_content.endswith("]") or cleaned_content.endswith("}"):
+            if cleaned_response.endswith("]") or cleaned_response.endswith("}"):
                 logger.debug(f"Valid response obtained on attempt {attempt}.")
-                return cleaned_content
+                return cleaned_response
             else:
                 logger.warning(f"Incomplete JSON on attempt {attempt}, retrying...")
 
+        # Log the exception that occurred during the attempt
         except Exception as e:
-            # Log the exception during the attempt
             logger.error(f"Error on attempt {attempt}: {e}")
+
+        # Add a delay before the next retry (except after the last attempt)
+        if attempt < max_retries:
+            logger.debug(f"Waiting {delay_between_retries} seconds before retrying...")
+            time.sleep(delay_between_retries)
 
     # Raise an error if all retry attempts fail
     raise RuntimeError(
@@ -104,81 +112,95 @@ def _validate_and_parse_response(cleaned_content):
     """
     try:
         # Attempt to validate and parse the JSON using the schema
-        parsed_response = WordAlignmentList.model_validate_json(
-            cleaned_content).root
+        parsed_response = WordAlignmentList.model_validate_json(cleaned_content).root
         return parsed_response
 
+    # Log detailed validation errors for debugging
     except ValidationError as ve:
-        # Log detailed validation errors for debugging
         logger.error(f"Validation error while parsing response: {ve.json()}")
         raise ve
 
+    # Handle generic JSON decoding errors
     except json.JSONDecodeError as je:
-        # Handle generic JSON decoding errors
         logger.error(f"JSON decode error: {je}")
         raise RuntimeError("Failed to decode JSON response.") from je
 
 
-def _process_lyrics_in_chunks(raw_lyrics, corrected_lyrics, chunk_size=50):
+def _process_lyrics_in_chunks(raw_lyrics, reference_lyrics, chunk_size=50):
     """
     Processes raw lyrics in chunks, aligning them with corrected lyrics.
-
-    This function splits the raw lyrics into smaller chunks, processes each chunk using
-    a language model, and aligns the transcriptions with the corrected lyrics.
-
-    Args:
-        raw_lyrics (list): The raw transcribed lyrics.
-        corrected_lyrics (list): The corrected lyrics.
-        chunk_size (int): Number of words per chunk.
-
-    Returns:
-        list: A combined response of aligned lyrics from all chunks.
-
-    Raises:
-        Exception: If an error occurs while processing any chunk.
     """
-    # Split raw lyrics into smaller chunks
+    # Split raw lyrics into smaller chunks: List[List[dict]]
     chunks = _chunk_lyrics(raw_lyrics, chunk_size)
-    total_chunks = len(chunks)
-    aligned_lyrics = []  # To store the final aligned lyrics
 
-    logger.info(f"Processing {total_chunks} chunks of raw lyrics.")
+    # Get the total number of chunks (each chunk is a list of word dictionaries)
+    total_chunks = len(chunks)
+
+    # Initialize a list to store the final aligned lyrics (list of WordAlignment objects)
+    aligned_lyrics = []  
+
+    # Iterate over each chunk in the "raw_lyrics" list and process it.
     for chunk_number, raw_chunk in enumerate(chunks, start=1):
         logger.info(f"Processing chunk {chunk_number}/{total_chunks}...")
 
-        # Debug: Log the chunk and corresponding corrected lyrics
-        logger.debug(f"Raw Chunk {chunk_number}")
-        pprint(raw_chunk, sort_dicts=False)
-
-        logger.debug(f"Official Lyrics Chunk {chunk_number}")
-        # pprint(corrected_lyrics, sort_dicts=False)
-
         # Generate the prompt for the current chunk
-        prompt = generate_prompt(
-            raw_chunk, corrected_lyrics, chunk_number, total_chunks)
+        prompt = generate_prompt(raw_chunk, reference_lyrics, chunk_number, total_chunks)
 
         try:
             # Attempt to retrieve a cleaned response from the model
-            cleaned_content = _retry_with_chunks(prompt)
+            cleaned_response = _invoke_with_retries(prompt)
 
             # Validate and parse the cleaned response
-            try:
-                parsed_response = WordAlignmentList.model_validate_json(cleaned_content).root
+            parsed_response = _validate_and_parse_response(cleaned_response)
 
-            except ValidationError as ve:
-                logger.error(f"Validation error while processing chunk {chunk_number}/{total_chunks}: {ve.json()}")
-                raise ve
-
-            # Append processed lyrics to the result and update the corrected lyrics
+            # Append processed lyrics to the result
             aligned_lyrics.extend(parsed_response)
-            corrected_lyrics = corrected_lyrics[len(parsed_response):]
-            pprint(corrected_lyrics, sort_dicts=False)
+
+            # ! ================================================================
+            # ! ================================================================
+            # ! ================================================================
+
+            # # Normalize both reference and parsed words
+            # def normalize_text(text):
+            #     return text.lower().strip().replace("'", "").replace('"', "")
+            
+            # # Check if the lengths match first
+            # if len(reference_lyrics[:len(parsed_response)]) != len(parsed_response):
+            #     logger.warning(
+            #         f"Chunk {chunk_number}: Length mismatch! Reference length: "
+            #         f"{len(reference_lyrics[:len(parsed_response)])}, Parsed length: {len(parsed_response)}"
+            #     )
+            # else:
+            #     # Normalize and compare content directly
+            #     def normalize_text(text):
+            #         return text.lower().strip().replace("'", "").replace('"', "")
+
+            #     # Normalize both reference and parsed words
+            #     normalized_reference = [normalize_text(word) for word in reference_lyrics[:len(parsed_response)]]
+            #     normalized_parsed = [normalize_text(word_alignment.word) for word_alignment in parsed_response]
+
+            #     if normalized_reference != normalized_parsed:
+            #         logger.warning(f"Mismatch in chunk {chunk_number}: Content mismatch!")
+            #         for i, (ref_word, parsed_word) in enumerate(zip(normalized_reference, normalized_parsed)):
+            #             if ref_word != parsed_word:
+            #                 logger.debug(f"Mismatch at position {i}: Reference '{ref_word}' vs Parsed '{parsed_word}'")
+
+            # Check if the parsed response length matches the chunk length
+            # logger.debug(f"Chunk {chunk_number} | Reference {reference_lyrics[:len(parsed_response)]} | Parsed {parsed_response}")
+            # if reference_lyrics[:len(parsed_response)] != parsed_response:
+            #     logger.warning("Mismatch between parsed response and reference lyrics.")
+
+            # ! ================================================================
+            # ! ================================================================
+            # ! ================================================================
+            
+            # Update the corrected_lyrics to remove matched words
+            reference_lyrics = reference_lyrics[len(parsed_response):]
             logger.info(f"Successfully processed chunk {chunk_number}/{total_chunks}.")
 
         except Exception as e:
             logger.error(f"Error processing chunk {chunk_number}: {e}")
             raise e
 
-    # Return the combined list of aligned lyrics
-    logger.info("All chunks processed successfully.")
+    logger.info("Modified lyrics successfully processed in chunks!")
     return aligned_lyrics

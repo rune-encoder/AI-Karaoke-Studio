@@ -163,8 +163,15 @@ def write_lyrics_events(f, verses, primary_color="&H00FFFFFF", highlight_color="
                     )
 
             # Calculate letter-by-letter timing for the current word
+            print(word_start)
+            print(word_end)
+            print(word_text)
+
             char_count = len(word_text)
+            print(char_count)
+
             segment_duration = (word_end - word_start) / char_count
+            print(segment_duration)
 
             for k in range(1, char_count + 1):
                 # Progressively highlight the current word
