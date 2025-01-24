@@ -2,6 +2,7 @@
 import logging
 import json
 import time
+from pprint import pprint
 
 # Third-Party Imports
 from pydantic import ValidationError
@@ -130,6 +131,10 @@ def _process_lyrics_in_chunks(raw_lyrics, reference_lyrics, chunk_size=50):
     """
     Processes raw lyrics in chunks, aligning them with corrected lyrics.
     """
+    import pickle
+    with open('aligned_lyrics.pkl', 'wb') as f:
+        pickle.dump(raw_lyrics, f)
+
     # Split raw lyrics into smaller chunks: List[List[dict]]
     chunks = _chunk_lyrics(raw_lyrics, chunk_size)
 
@@ -138,13 +143,32 @@ def _process_lyrics_in_chunks(raw_lyrics, reference_lyrics, chunk_size=50):
 
     # Initialize a list to store the final aligned lyrics (list of WordAlignment objects)
     aligned_lyrics = []  
+    reference_lyrics_copy = reference_lyrics[:]
 
     # Iterate over each chunk in the "raw_lyrics" list and process it.
     for chunk_number, raw_chunk in enumerate(chunks, start=1):
         logger.info(f"Processing chunk {chunk_number}/{total_chunks}...")
 
+        # Extract the words and their corresponding verse numbers for the current prompt
+        reference_words = [word for word, _ in reference_lyrics_copy]
+        # reference_verse_numbers = [verse_number for _, verse_number in reference_lyrics]
+
+        logger.debug(f"CHUNK {chunk_number}/{total_chunks}: START: {raw_chunk[0]['word']} | {raw_chunk[0]['start']} => {raw_chunk[0]['end']}")
+        logger.debug(f"CHUNK {chunk_number}/{total_chunks}: END: {raw_chunk[-1]['word']} | {raw_chunk[-1]['start']} => {raw_chunk[-1]['end']}")
+
         # Generate the prompt for the current chunk
-        prompt = generate_prompt(raw_chunk, reference_lyrics, chunk_number, total_chunks)
+        prompt = generate_prompt(
+            raw_chunk,
+            reference_words,
+            chunk_number,
+            total_chunks,
+            chunk_start_time=raw_chunk[0]['start'],
+            chunk_end_time=raw_chunk[-1]['end'],
+            processed_words=len(aligned_lyrics),
+            total_words=len(reference_words)
+        )
+
+        # print(prompt)
 
         try:
             # Attempt to retrieve a cleaned response from the model
@@ -153,49 +177,16 @@ def _process_lyrics_in_chunks(raw_lyrics, reference_lyrics, chunk_size=50):
             # Validate and parse the cleaned response
             parsed_response = _validate_and_parse_response(cleaned_response)
 
+            # # Append processed lyrics to the result, preserving verse numbers
+            # for word_alignment, verse_number in zip(parsed_response, reference_verse_numbers[:len(parsed_response)]):
+            #     # Add verse number to the WordAlignment object
+            #     word_alignment.verse_number = verse_number  
+
             # Append processed lyrics to the result
             aligned_lyrics.extend(parsed_response)
-
-            # ! ================================================================
-            # ! ================================================================
-            # ! ================================================================
-
-            # # Normalize both reference and parsed words
-            # def normalize_text(text):
-            #     return text.lower().strip().replace("'", "").replace('"', "")
-            
-            # # Check if the lengths match first
-            # if len(reference_lyrics[:len(parsed_response)]) != len(parsed_response):
-            #     logger.warning(
-            #         f"Chunk {chunk_number}: Length mismatch! Reference length: "
-            #         f"{len(reference_lyrics[:len(parsed_response)])}, Parsed length: {len(parsed_response)}"
-            #     )
-            # else:
-            #     # Normalize and compare content directly
-            #     def normalize_text(text):
-            #         return text.lower().strip().replace("'", "").replace('"', "")
-
-            #     # Normalize both reference and parsed words
-            #     normalized_reference = [normalize_text(word) for word in reference_lyrics[:len(parsed_response)]]
-            #     normalized_parsed = [normalize_text(word_alignment.word) for word_alignment in parsed_response]
-
-            #     if normalized_reference != normalized_parsed:
-            #         logger.warning(f"Mismatch in chunk {chunk_number}: Content mismatch!")
-            #         for i, (ref_word, parsed_word) in enumerate(zip(normalized_reference, normalized_parsed)):
-            #             if ref_word != parsed_word:
-            #                 logger.debug(f"Mismatch at position {i}: Reference '{ref_word}' vs Parsed '{parsed_word}'")
-
-            # Check if the parsed response length matches the chunk length
-            # logger.debug(f"Chunk {chunk_number} | Reference {reference_lyrics[:len(parsed_response)]} | Parsed {parsed_response}")
-            # if reference_lyrics[:len(parsed_response)] != parsed_response:
-            #     logger.warning("Mismatch between parsed response and reference lyrics.")
-
-            # ! ================================================================
-            # ! ================================================================
-            # ! ================================================================
             
             # Update the corrected_lyrics to remove matched words
-            reference_lyrics = reference_lyrics[len(parsed_response):]
+            reference_lyrics_copy = reference_lyrics_copy[len(parsed_response):]
             logger.info(f"Successfully processed chunk {chunk_number}/{total_chunks}.")
 
         except Exception as e:
@@ -203,4 +194,12 @@ def _process_lyrics_in_chunks(raw_lyrics, reference_lyrics, chunk_size=50):
             raise e
 
     logger.info("Modified lyrics successfully processed in chunks!")
+
+    logger.info("Assigning verse numbers to aligned lyrics...")
+    # Assign verse numbers to the aligned lyrics based on the reference lyrics
+    reference_verse_numbers = [verse_number for _, verse_number in reference_lyrics]
+    for word_alignment, verse_number in zip(aligned_lyrics, reference_verse_numbers):
+        # Add verse number to the WordAlignment object
+        word_alignment.verse_number = verse_number
+
     return aligned_lyrics

@@ -1,5 +1,5 @@
 # Standard Library Imports
-from typing import List
+from typing import List, Optional
 import os
 
 # Third-Party Imports
@@ -39,14 +39,28 @@ Your task is to:
      - "it's" → "it is"
      - "cannot" → "can not"
      - "they are" → "they're"
-   - Ensure that the **capitalization** and **punctuation** match the corrected lyrics exactly. Do not infer or add punctuation where it does not exist in the corrected lyrics. For example:
-     - Raw: "twinkle twinkle little star"
-     - Corrected: "Twinkle twinkle little star"
-     - Raw: "how i wonder what you are"
-     - Corrected: "How I wonder what you are"
+   - Ensure that the **capitalization** and **punctuation** match the corrected lyrics exactly. Do not infer or add punctuation where it does not exist in the corrected lyrics.
 
-2. Adhere to the following constraints:
-   - **Do not modify the start and end times** of any words unless splitting or merging requires adjustment.
+2. **Timing Constraints**:
+   - The **start** and **end** times for each word **must not overlap** with previous words.
+   - The timing must be **incremental**: each word's start time must be greater than or equal to the previous word's end time.
+    - Under no circumstances should a word have a start time or end time earlier than the most recently processed word, either within the chunk or across chunks.
+   - If timing errors are detected, adjust them to maintain incremental order while preserving the original sequence as much as possible.
+
+3. Adhere to the following constraints:
+   - Use the **probability score** provided for each word to guide decisions:
+     - Words with high probabilities (≥ 0.9) are likely correct.
+     - Words with low probabilities (< 0.8) should be evaluated for correctness and potentially removed if they do not align with the corrected lyrics.
+   - The sequence of words must match the corrected lyrics exactly, accounting for removed or modified words.
+   - Ensure output is valid JSON and follows the provided schema.
+
+3. **Timing Consistency Across Chunks**:
+   - The start time of the first word in a chunk **must be greater than or equal to** the end time of the last word from the previous chunk.
+   - You will be provided with the start and end timing boundaries for the current chunk. These boundaries must be respected:
+     - Words within the chunk cannot have timings earlier than the chunk's start time or later than the chunk's end time.
+     - Any adjustments to timing must maintain this boundary.
+
+4. Adhere to the following constraints:
    - Use the **probability score** provided for each word to guide decisions:
      - Words with high probabilities (≥ 0.9) are likely correct.
      - Words with low probabilities (< 0.8) should be evaluated for correctness and potentially removed if they do not align with the corrected lyrics.
@@ -64,7 +78,7 @@ EDGE_CASES = """
        { "word": "", "start": 1.0, "end": 1.5 }
    ]
 
-2. If a word is split or merged, include both words in the same string:
+2. If a word is split or merged, include both words in the same string while maintaining proper timing:
    Raw: "it's a nice day"
    Corrected: "it is a nice day"
    Output: [
@@ -74,15 +88,7 @@ EDGE_CASES = """
        { "word": "day", "start": 1.5, "end": 2.0 }
    ]
 
-3. If a word is correct, retain it as is:
-   Raw: "hello world"
-   Corrected: "hello world"
-   Output: [
-       { "word": "hello", "start": 0.0, "end": 0.5 },
-       { "word": "world", "start": 0.5, "end": 1.0 }
-   ]
-
-4. If a ghost word appears in between, leave it as an empty string:
+3. If a ghost word appears in between, leave it as an empty string:
    Raw: "hello ghost world"
    Corrected: "hello world"
    Output: [
@@ -102,6 +108,10 @@ class WordAlignment(BaseModel):
     end: float = Field(
         ...,
         description="The end time of the word in seconds. Do not modify. Must be a float."
+    )
+    verse_number: Optional[int] = Field(
+        None, 
+        description="The verse number in the lyrics. Do not modify. Must remain `None`."
     )
 
 # Define a schema for a list of WordAlignment objects
