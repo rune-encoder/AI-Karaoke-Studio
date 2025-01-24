@@ -37,8 +37,6 @@ def ensure_file_exists(file_path: Union[str, Path], error_message: str = "File n
         logger.error(f"{error_message}: {file_path}")
         raise FileNotFoundError(f"{error_message}: {file_path}")
 
-    from pathlib import Path
-
 
 def ensure_directory_exists(directory: Union[str, Path]) -> Path:
     """

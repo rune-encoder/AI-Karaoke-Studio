@@ -21,10 +21,10 @@ def _get_log_filename(folder_path):
     Generates a log file name based on the current date and time.
     """
     # Get the current date and time
-    timestamp = datetime.now().strftime('%m-%d-%Y_%H-%M')
+    timestamp = datetime.now().strftime('%m-%d-%Y_%H-%M-%S')
 
     # Generate the log file path
-    log_file_path = os.path.join(folder_path, f'log_{timestamp}.log')
+    log_file_path = os.path.join(folder_path, f'{timestamp}.log')
 
     return log_file_path
 

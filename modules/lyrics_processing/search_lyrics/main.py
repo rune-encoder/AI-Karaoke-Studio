@@ -1,5 +1,6 @@
 # Standard Library Imports
 import logging
+import re
 
 # Local Application Imports
 from .config import GENIUS_API_TOKEN
@@ -28,9 +29,11 @@ def _fetch_official_lyrics(metadata):
     Raises:
         ValueError: If the song cannot be found or lyrics are unavailable.
     """
+    # Remove any text within parentheses from the title
+    title = re.sub(r"\(.*?\)", "", metadata["title"]).strip()
 
-    title = metadata["title"]
-    artist = metadata["artists"]
+    # Join multiple artists into a single string
+    artist = ", ".join(metadata["artists"]) if isinstance(metadata["artists"], list) else metadata["artists"]
 
     try:
         # Search for the song on Genius
