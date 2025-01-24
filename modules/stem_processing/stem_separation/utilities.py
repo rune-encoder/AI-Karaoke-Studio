@@ -7,6 +7,7 @@ import shutil
 # Initialize Logger
 logger = logging.getLogger(__name__)
 
+
 def _organize_outputs(output_path):
     """
     Organize output files by moving them from subdirectories to the main output directory.
@@ -37,6 +38,7 @@ def _organize_outputs(output_path):
 
             # Remove the now-empty subdirectory
             shutil.rmtree(model_dir)
+    logger.debug("Stem outputs organized successfully.")
 
 
 def _execute_command(cmd):
@@ -68,6 +70,8 @@ def _execute_command(cmd):
         if process.returncode != 0:
             raise RuntimeError(
                 f"Command failed with return code {process.returncode}.")
+        
+        logger.debug(f"Command executed successfully with return code {process.returncode}.")
         return True
 
     except Exception as e:

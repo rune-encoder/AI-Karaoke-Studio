@@ -131,9 +131,11 @@ def _process_lyrics_in_chunks(raw_lyrics, reference_lyrics, chunk_size=50):
     """
     Processes raw lyrics in chunks, aligning them with corrected lyrics.
     """
+    # ! DELETE THIS AFTER TESTING ==============================================
     import pickle
     with open('aligned_lyrics.pkl', 'wb') as f:
         pickle.dump(raw_lyrics, f)
+    # ! ========================================================================
 
     # Split raw lyrics into smaller chunks: List[List[dict]]
     chunks = _chunk_lyrics(raw_lyrics, chunk_size)
@@ -143,18 +145,24 @@ def _process_lyrics_in_chunks(raw_lyrics, reference_lyrics, chunk_size=50):
 
     # Initialize a list to store the final aligned lyrics (list of WordAlignment objects)
     aligned_lyrics = []  
+
+    # Create a copy of the reference lyrics to track the remaining words during
+    # each chunk processing iteration. (They are removed as they are processed)
     reference_lyrics_copy = reference_lyrics[:]
 
-    # Iterate over each chunk in the "raw_lyrics" list and process it.
+    # Iterate over each chunk in the cleaned "raw_lyrics" list and process it.
     for chunk_number, raw_chunk in enumerate(chunks, start=1):
         logger.info(f"Processing chunk {chunk_number}/{total_chunks}...")
 
         # Extract the words and their corresponding verse numbers for the current prompt
         reference_words = [word for word, _ in reference_lyrics_copy]
+
+        # ! DELETE THIS AFTER TESTING ==========================================
         # reference_verse_numbers = [verse_number for _, verse_number in reference_lyrics]
 
         logger.debug(f"CHUNK {chunk_number}/{total_chunks}: START: {raw_chunk[0]['word']} | {raw_chunk[0]['start']} => {raw_chunk[0]['end']}")
         logger.debug(f"CHUNK {chunk_number}/{total_chunks}: END: {raw_chunk[-1]['word']} | {raw_chunk[-1]['start']} => {raw_chunk[-1]['end']}")
+        # ! ====================================================================
 
         # Generate the prompt for the current chunk
         prompt = generate_prompt(
@@ -168,25 +176,26 @@ def _process_lyrics_in_chunks(raw_lyrics, reference_lyrics, chunk_size=50):
             total_words=len(reference_words)
         )
 
-        # print(prompt)
-
         try:
             # Attempt to retrieve a cleaned response from the model
             cleaned_response = _invoke_with_retries(prompt)
 
-            # Validate and parse the cleaned response
+            # Attempt to validate and parse the cleaned response from the model
             parsed_response = _validate_and_parse_response(cleaned_response)
 
+            # ! DELETE THIS AFTER TESTING ======================================
             # # Append processed lyrics to the result, preserving verse numbers
             # for word_alignment, verse_number in zip(parsed_response, reference_verse_numbers[:len(parsed_response)]):
             #     # Add verse number to the WordAlignment object
-            #     word_alignment.verse_number = verse_number  
+            #     word_alignment.verse_number = verse_number
+            # ! ================================================================
 
             # Append processed lyrics to the result
             aligned_lyrics.extend(parsed_response)
             
-            # Update the corrected_lyrics to remove matched words
+            # Update the referenced lyrics to remove matched words
             reference_lyrics_copy = reference_lyrics_copy[len(parsed_response):]
+
             logger.info(f"Successfully processed chunk {chunk_number}/{total_chunks}.")
 
         except Exception as e:
@@ -195,11 +204,16 @@ def _process_lyrics_in_chunks(raw_lyrics, reference_lyrics, chunk_size=50):
 
     logger.info("Modified lyrics successfully processed in chunks!")
 
+    # ! DELETE THIS AFTER TESTING ==============================================
     logger.info("Assigning verse numbers to aligned lyrics...")
+
     # Assign verse numbers to the aligned lyrics based on the reference lyrics
     reference_verse_numbers = [verse_number for _, verse_number in reference_lyrics]
+
     for word_alignment, verse_number in zip(aligned_lyrics, reference_verse_numbers):
+        
         # Add verse number to the WordAlignment object
         word_alignment.verse_number = verse_number
+    # ! ========================================================================
 
     return aligned_lyrics

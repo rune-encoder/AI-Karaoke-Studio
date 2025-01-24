@@ -1,3 +1,6 @@
+# Standard Imports
+import logging
+
 # Third-Party Imports
 from faster_whisper import WhisperModel
 
@@ -6,6 +9,9 @@ from .config import MODEL_SIZE, DEVICE, COMPUTE_TYPE
 
 # Initialize Whisper model globally to avoid reloading it multiple times
 MODEL = WhisperModel(MODEL_SIZE, device=DEVICE, compute_type=COMPUTE_TYPE)
+
+# Initialize Logger
+logger = logging.getLogger(__name__)
 
 
 def _extract_lyrics_with_timing(audio_path):
@@ -18,8 +24,10 @@ def _extract_lyrics_with_timing(audio_path):
     Returns:
         list[dict]: List of verses with text and metadata.
     """
+
     # Transcribe the audio and extract word-level timestamps
     segments, info = MODEL.transcribe(audio_path, word_timestamps=True)
+    logger.debug(f"Transcription of the vocals audio completed with {len(segments)} segments.")
 
     # Initialize an empty list to hold the processed verses
     verses = []
@@ -27,6 +35,7 @@ def _extract_lyrics_with_timing(audio_path):
     # Process each segment into a structured verse
     # Start indexing from 1
     for verse_index, segment in enumerate(segments, start=1):
+        logger.debug(f"Formatting segment: {verse_index}...")
 
         # Combine all words in the segment to form the full verse text
         verse_text = " ".join(word.word for word in segment.words)
@@ -56,4 +65,5 @@ def _extract_lyrics_with_timing(audio_path):
         # Append the verse metadata to the list of verses
         verses.append(verse_data)
 
+    logger.debug(f"Transcribed {len(verses)} verses with words, timing, and predictions using the Whisper model.")
     return verses

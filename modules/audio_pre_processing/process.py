@@ -23,12 +23,11 @@ def pre_process_audio_file(
 ):
     # Confirm the file is a valid audio file
     if not _validate_audio_file(input_file):
-        logger.error(f"Invalid audio file: {input_file}")
-        return
+        raise ValueError(f"Invalid audio file: {input_file}. Please provide a valid audio file.")
 
     file_hash = _get_file_hash(input_file)
     working_dir = _create_directory(Path(output_path) / file_hash)
-    logger.info(f"Directory: {working_dir}")
+    logger.info(f"Cache Directory: {working_dir}")
 
     # Check if the audio metadata file already exists in the output directory and
     # skip the extraction if the override flag is not set

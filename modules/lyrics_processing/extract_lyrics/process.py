@@ -39,5 +39,4 @@ def process_audio_extract_lyric_timing(
         logger.info(f"Audio raw lyrics extracted successfully!")
 
     except Exception as e:
-        logger.error(f"Erorr in extracting lyrics: {e}")
-        raise RuntimeError(f"Erorr in extracting lyrics: {e}")
+        raise RuntimeError(f"Error in extracting lyrics: {e}")

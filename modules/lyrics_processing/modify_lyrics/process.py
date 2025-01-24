@@ -10,10 +10,11 @@ from ...utilities import load_json, save_json
 # Initialize Logger
 logger = logging.getLogger(__name__)
 
+
 def process_lyrics_modification(
     output_path: Union[str, Path],
     override: bool = False,
-    file_name: str = "modified_ai_lyrics.json",
+    file_name: str = "modified_lyrics.json",
 ):
     """
     Processes and modifies lyrics using AI, saving the output to a file.
@@ -39,12 +40,14 @@ def process_lyrics_modification(
         # Step 2: Ensure required input files exist
         raw_lyrics_file = Path(output_path) / "raw_lyrics.json"
         if not raw_lyrics_file.exists():
-            logger.warning(f"Raw lyrics file does not exist. Skipping lyrics modification...")
+            logger.warning(
+                f"Raw lyrics file does not exist. Skipping lyrics modification...")
             return
-        
+
         official_lyrics_file = Path(output_path) / "official_lyrics.json"
         if not official_lyrics_file.exists():
-            logger.warning(f"Official lyrics file does not exist. Skipping lyrics modification...")
+            logger.warning(
+                f"Official lyrics file does not exist. Skipping lyrics modification...")
             return
 
         # Step 3: Load the input files
