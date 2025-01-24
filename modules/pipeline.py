@@ -8,6 +8,7 @@ from .stem_processing import (process_audio_merging, process_audio_stem_separati
 from .lyrics_processing import (process_audio_extract_lyric_timing, process_lyric_search, process_lyrics_modification)
 from .audio_pre_processing import pre_process_audio_file
 from .logging_config import configure_logging
+from .subtitles import process_karaoke_subtitles
 
 # Initialize Logger
 logger = logging.getLogger(__name__)
@@ -55,3 +56,5 @@ def run_pipeline(
     # Lyrics Modification using AI
     # ════════════════════════════════════════════════════════════
     process_lyrics_modification(working_dir, override=override_all)
+
+    # process_karaoke_subtitles(working_dir, override=override_all)
