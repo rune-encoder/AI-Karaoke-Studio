@@ -27,7 +27,7 @@ def _extract_lyrics_with_timing(audio_path):
 
     # Transcribe the audio and extract word-level timestamps
     segments, info = MODEL.transcribe(audio_path, word_timestamps=True)
-    logger.debug(f"Transcription of the vocals audio completed with {len(segments)} segments.")
+    logger.debug(f"Transcription of the vocals audio segments completed.")
 
     # Initialize an empty list to hold the processed verses
     verses = []

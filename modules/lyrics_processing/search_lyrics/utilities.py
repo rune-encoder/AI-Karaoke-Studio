@@ -26,6 +26,7 @@ def _search_genius_lyrics(title, artist, api_key=GENIUS_API_TOKEN):
     Raises:
         Exception: If the API request fails or returns an error response.
     """
+
     # API endpoint and headers
     base_url = "https://api.genius.com/search"
     headers = {"Authorization": f"Bearer {api_key}"}
@@ -47,7 +48,23 @@ def _search_genius_lyrics(title, artist, api_key=GENIUS_API_TOKEN):
     if not hits:
         return None
 
-    # Return the first result (you can modify this to return more results if needed)
+    # Validate the results returned by the Genius API
+    for hit in hits:  # Iterate through each search result (hit) from the API response
+
+        # Extract and normalize the song title and artist name from the current hit
+        result_title = hit["result"]["title"].lower()  # Convert the song title to lowercase for case-insensitive comparison
+        result_artist = hit["result"]["primary_artist"]["name"].lower()  # Convert the artist name to lowercase for case-insensitive comparison
+
+        # Check if the input title and artist match the current result
+        # - 'title.lower() in result_title' ensures the desired title is part of the result's title
+        # - 'artist.lower() in result_artist' ensures the desired artist is part of the result's artist name
+        if title.lower() in result_title and artist.lower() in result_artist:
+            # If both title and artist match, return the URL of the matching result
+            logger.debug(f"Exact match found for '{title}' by '{artist}'.")
+            return hit["result"]["url"]
+    
+    # If no matching results are found, the function will return the first result URL
+    logger.debug(f"No exact match found for '{title}' by '{artist}'. Returning the first result URL.")
     return hits[0]["result"]["url"]
 
 

@@ -20,9 +20,9 @@ def process_karaoke_subtitles(
     file_name: str = "karaoke_subtitles.ass"
 ):
     try:
-        modified_lyrics_file = Path(output_path) / "modified_ai_lyrics.json"
+        modified_lyrics_file = Path(output_path) / "modified_lyrics.json"
         raw_lyrics_file = Path(output_path) / "raw_lyrics.json"
-        audio_file = Path(output_path) / "instrumental.mp3"
+        audio_file = Path(output_path) / "karaoke_audio.mp3"
         output_file = Path(output_path) / file_name
 
         # Check if the output file already exists and skip if override is not set

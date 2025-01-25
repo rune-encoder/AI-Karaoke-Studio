@@ -131,12 +131,6 @@ def _process_lyrics_in_chunks(raw_lyrics, reference_lyrics, chunk_size=50):
     """
     Processes raw lyrics in chunks, aligning them with corrected lyrics.
     """
-    # ! DELETE THIS AFTER TESTING ==============================================
-    import pickle
-    with open('aligned_lyrics.pkl', 'wb') as f:
-        pickle.dump(raw_lyrics, f)
-    # ! ========================================================================
-
     # Split raw lyrics into smaller chunks: List[List[dict]]
     chunks = _chunk_lyrics(raw_lyrics, chunk_size)
 
@@ -203,6 +197,12 @@ def _process_lyrics_in_chunks(raw_lyrics, reference_lyrics, chunk_size=50):
             raise e
 
     logger.info("Modified lyrics successfully processed in chunks!")
+    
+    # ! DELETE THIS AFTER TESTING ==========================================
+    import pickle
+    with open('modified_lyrics_pre.pkl', 'wb') as f:
+        pickle.dump(aligned_lyrics, f)
+    # ! ====================================================================
 
     # ! DELETE THIS AFTER TESTING ==============================================
     logger.info("Assigning verse numbers to aligned lyrics...")
