@@ -93,112 +93,151 @@ def _clean_gemini_response(content):
     return cleaned_content
 
 
-def _expand_gemini_lyrics(ai_output, reference_lyrics):
+# def _expand_gemini_lyrics(ai_output):
+#     """
+#     Converts AI-generated word alignments into a structured JSON format grouped by verses.
+
+#     Args:
+#         ai_output (list): A list of WordAlignment objects, where each object contains:
+#             - word (str): The word from the AI output.
+#             - start (float): The start time of the word.
+#             - end (float): The end time of the word.
+#             - verse_number (int): The verse number to which the word belongs.
+
+#     Returns:
+#         list: A list of dictionaries, where each dictionary represents a verse with:
+#             - verse_number (int): The sequential number of the verse.
+#             - text (str): The complete text of the verse.
+#             - start (float): The start time of the first word in the verse.
+#             - end (float): The end time of the last word in the verse.
+#             - words (list): A list of dictionaries for each word in the verse, containing:
+#                 - word (str): The word text.
+#                 - word_number (int): The position of the word within the verse.
+#                 - start (float): The start time of the word.
+#                 - end (float): The end time of the word.
+
+#     Notes:
+#         - Assumes `ai_output` is sorted by `verse_number` and word timing.
+#         - Groups words into verses based on their `verse_number`.
+#     """
+
+#     # Step 1: Initialize the formatted output list
+#     formatted_output = []
+
+#     # Step 2: Group words by their `verse_number`
+#     grouped_verses = {}
+
+#     for word_index, word_alignment in enumerate(ai_output):
+#         # Extract the verse number from the word alignment object
+#         verse_number = word_alignment.verse_number
+
+#         # Initialize a new list for this verse if it doesn't already exist
+#         if verse_number not in grouped_verses:
+#             grouped_verses[verse_number] = []
+
+#         # Append the word along with its position in the verse
+#         grouped_verses[verse_number].append((word_index + 1, word_alignment))  # (word_number, WordAlignment)
+
+#     # Step 3: Process each verse to construct the formatted output
+#     for verse_number, words in sorted(grouped_verses.items()):
+        
+#         # Get the start time of the first word and the end time of the last word in the verse
+#         verse_start = words[0][1].start  # Start time of the first word
+#         verse_end = words[-1][1].end    # End time of the last word
+
+#         # Construct the complete text of the verse by joining the words
+#         verse_text = " ".join(word_alignment.word for _, word_alignment in words)
+
+#         # Build a list of word details for the verse
+#         words_details = [
+#             {
+#                 "word": word_alignment.word,
+#                 "word_number": word_number,
+#                 "start": word_alignment.start,
+#                 "end": word_alignment.end,
+#             }
+#             for word_number, word_alignment in words
+#         ]
+
+#         # Append the constructed verse details to the output list
+#         formatted_output.append({
+#             "verse_number": verse_number,  # The verse number
+#             "text": verse_text,           # The complete verse text
+#             "start": verse_start,         # Start time of the verse
+#             "end": verse_end,             # End time of the verse
+#             "words": words_details,       # List of word-level details
+#         })
+
+#     # Step 4: Return the formatted output containing all verses
+#     return formatted_output
+
+
+def _expand_gemini_lyrics(ai_output):
     """
-    Converts AI-generated word alignments into a structured JSON format aligned with cleaned lyrics.
+    Converts AI-generated word alignments into a structured JSON format grouped by verses.
+    Handles short verses and boundary overlaps explicitly.
 
     Args:
-        ai_output (list): A list of WordAlignment objects, where each object contains:
-            - word (str): The word from the AI output.
+        ai_output (list): A list of WordAlignment objects, each with:
+            - word (str): The word text.
             - start (float): The start time of the word.
             - end (float): The end time of the word.
-        reference_lyrics (list): A list of verses (strings) from the cleaned lyrics.
-            Each verse is a line or group of words representing a segment of lyrics.
+            - verse_number (int): The verse number the word belongs to.
 
     Returns:
-        list: A list of dictionaries representing formatted lyrics. Each dictionary includes:
-            - verse_number (int): The sequential number of the verse.
-            - text (str): The original text of the verse from reference_lyrics.
-            - start (float): The start time of the first word in the verse.
-            - end (float): The end time of the last word in the verse.
-            - words (list): A list of word dictionaries, each containing:
-                - word (str): The word text.
-                - word_number (int): The position of the word in the verse.
-                - start (float): The start time of the word.
-                - end (float): The end time of the word.
-
-    Raises:
-        ValueError: If there is a mismatch in word alignment or if a verse cannot be fully aligned.
-
-    Notes:
-        - This function assumes `ai_output` is pre-sorted by time.
-        - It logs warnings for any mismatches or leftover words but does not stop execution.
+        list: A list of dictionaries, where each dictionary represents a verse.
     """
 
-    # Initialize the formatted output list
+    # Step 1: Initialize the formatted output list
     formatted_output = []
-    
-    # Pointer to track the current position in the AI output
-    word_index = 0  
 
-    # Iterate through each verse in the cleaned lyrics
-    for verse_number, verse_text in enumerate(reference_lyrics, start=1):
-        verse_words = []        # List to store word-level details for this verse
-        verse_start = None      # Start time of the verse
-        verse_end = None        # End time of the verse
+    # Step 2: Group words by their `verse_number`
+    grouped_verses = {}
+    for word_alignment in ai_output:
+        verse_number = word_alignment.verse_number
 
-        # Split the verse text into individual words
-        words_in_verse = verse_text.split()
+        # Initialize a new list for this verse if it doesn't already exist
+        if verse_number not in grouped_verses:
+            grouped_verses[verse_number] = []
+        grouped_verses[verse_number].append(word_alignment)
 
-        # Process each word in the current verse
-        for word_number, word in enumerate(words_in_verse, start=1):
-            
-            # Check if we have exhausted the AI output
-            if word_index >= len(ai_output):
-                logger.warning(
-                    f"Ran out of AI output while processing verse {verse_number}. "
-                    f"Word: '{word}' (word {word_number} in verse)."
-                )
-                break
+    # Step 3: Process each verse
+    for verse_number, words in sorted(grouped_verses.items()):
+        # Get the start and end time of the verse
+        verse_start = words[0].start  # Start time of the first word
+        verse_end = words[-1].end    # End time of the last word
 
-            # Retrieve the current word alignment from the AI output
-            ai_word = ai_output[word_index]
+        # Construct the complete text of the verse
+        verse_text = " ".join(word.word for word in words)
 
-            # Check if the words match (case-insensitive comparison)
-            if ai_word.word != word.lower():
-                logger.warning(
-                    f"Mismatch detected in verse {verse_number}, word {word_number}: "
-                    f"Expected '{word}', got '{ai_word.word}'."
-                )
+        # Build word details for the verse
+        words_details = [
+            {
+                "word": word.word,
+                "word_number": idx + 1,
+                "start": word.start,
+                "end": word.end,
+            }
+            for idx, word in enumerate(words)
+        ]
 
-            # Set the start time of the verse if this is the first word
-            if verse_start is None:
-                verse_start = ai_word.start
-
-            # Update the end time of the verse with the current word's end time
-            verse_end = ai_word.end
-
-            # Add word details to the verse
-            verse_words.append({
-                "word": ai_word.word,
-                "word_number": word_number,
-                "start": ai_word.start,
-                "end": ai_word.end,
-            })
-
-            # Move to the next word in the AI output
-            word_index += 1
-
-        # Log if not all words in the verse could be aligned
-        if len(verse_words) < len(words_in_verse):
-            logger.warning(
-                f"Not enough AI output words to fully align verse {verse_number}. "
-                f"Expected {len(words_in_verse)}, got {len(verse_words)}."
-            )
-
-        # Append the verse details to the formatted output
+        # Append the constructed verse to the formatted output
         formatted_output.append({
             "verse_number": verse_number,
             "text": verse_text,
             "start": verse_start,
             "end": verse_end,
-            "words": verse_words,
+            "words": words_details,
         })
 
-    # Log any leftover words in the AI output
-    if word_index < len(ai_output):
-        logger.warning(
-            f"Unused words in AI output. {len(ai_output) - word_index} words left unaligned."
-        )
+    # Step 4: Check for anomalies in short verses
+    for i in range(1, len(formatted_output)):
+        current_verse = formatted_output[i]
+        previous_verse = formatted_output[i - 1]
+
+        # If the start time of the current verse overlaps with the previous one, fix it
+        if current_verse["start"] < previous_verse["end"]:
+            # Adjust the start time of the current verse to align properly
+            current_verse["start"] = previous_verse["end"]
 
     return formatted_output
