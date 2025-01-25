@@ -15,7 +15,7 @@ from modules.utilities import normalize_path
 logger = logging.getLogger(__name__)
 
 # AcoustID API Key
-API_KEY = os.getenv('ACOUST_ID')
+ACOUSTID_API_KEY = os.getenv('ACOUST_ID')
 
 
 def _extract_audio_metadata(
@@ -34,7 +34,7 @@ def _extract_audio_metadata(
             fingerprint = fingerprint.decode('utf-8')
 
         # Query AcoustID API and search for the best matching audio
-        result = acoustid.lookup(API_KEY, fingerprint, int(duration))
+        result = acoustid.lookup(ACOUSTID_API_KEY, fingerprint, int(duration))
         logging.debug(f"AcoustID lookup result: {result}")
 
         # Check if there is no match found, log a warning and return
@@ -56,7 +56,10 @@ def _extract_audio_metadata(
         }
 
         if recordings:
-            recording = recordings[0]  # Get the first recording
+            # Get the first recording
+            recording = recordings[0]  
+
+            # Update metadata with the recording details
             metadata["title"] = recording.get('title', metadata["title"])
             metadata["artists"] = [artist.get(
                 'name', 'Unknown Artist') for artist in recording.get('artists', [])]

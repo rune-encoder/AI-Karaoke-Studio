@@ -26,16 +26,15 @@ def _merge_audio_stems(
 
     # Validate that all required audio stem paths are found
     if not all(stem in stem_files for stem in expected_files):
-        logger.error(
-            "All required stem files (bass, drums, other) must be provided.")
         raise ValueError(
             "All required stem files (bass, drums, other) must be provided.")
 
     try:
+        logger.debug(f"Stem files found: {stem_files}")
+        
         # Step 1: Load the audio stems
         # Each stem (bass, drums, other, vocals) is loaded as an AudioSegment object
-        stems = [AudioSegment.from_file(stem_files[stem])
-                 for stem in expected_files]
+        stems = [AudioSegment.from_file(stem_files[stem]) for stem in expected_files]
 
         # Step 2: Merge the stems by overlaying them sequentially
         # Start with the first stem (bass) and overlay the rest (drums, other, vocals) one by one

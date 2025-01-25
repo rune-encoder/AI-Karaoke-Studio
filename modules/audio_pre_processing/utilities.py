@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 # Local Application Imports
 from .config import EXTENSIONS
 
+
 def _create_directory(path):
     """
     Create a directory if it does not exist.

@@ -34,6 +34,7 @@ def _search_genius_lyrics(title, artist, api_key=GENIUS_API_TOKEN):
     # Make the API request
     response = requests.get(base_url, headers=headers, params=params)
 
+    # Check for errors in the response status code
     if response.status_code != 200:
         raise Exception(
             f"Genius API error: {response.status_code}, {response.json()}"
@@ -108,7 +109,6 @@ def _clean_genius_lyrics(fetched_lyrics):
     lyrics_text = re.sub(r"[\u2000-\u200A]", " ", lyrics_text)
 
     # Split into individual lines and remove empty lines
-    cleaned_lyrics = [line.strip()
-                      for line in lyrics_text.split("\n") if line.strip()]
+    cleaned_lyrics = [line.strip() for line in lyrics_text.split("\n") if line.strip()]
 
     return cleaned_lyrics

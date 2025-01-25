@@ -1,5 +1,4 @@
 # Third-Party Imports
-from langchain.output_parsers import StructuredOutputParser, ResponseSchema
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 # Local Application Imports
@@ -12,12 +11,6 @@ llm = ChatGoogleGenerativeAI(
     temperature=0
 )
 
-# Each chunk contains a subset of the raw transcribed lyrics for this task. 
-# The corrected lyrics provided below represent the full song and are consistent across all chunks to ensure proper alignment.
-
-# After each chunk is processed:
-# 1. The corrected lyrics will be dynamically updated to reflect the lyrics already aligned in the previous chunks.
-# 2. This ensures that each chunk focuses only on the remaining unprocessed parts of the corrected lyrics.
 
 def generate_prompt(raw_lyrics, reference_lyrics, chunk_number, total_chunks, chunk_start_time, chunk_end_time, processed_words, total_words):
     PROMPT = f"""

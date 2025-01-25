@@ -1,12 +1,65 @@
 # Standard Library Imports
 from logging.handlers import RotatingFileHandler
 import logging
+import os
+from datetime import datetime, timedelta
 
 # Third-Party Imports
 import colorlog
 
 
-def configure_logging(verbose=False, log_file='project.log'):
+def _create_logs_folder(folder_path='logs'):
+    """
+    Ensures the logs folder exists.
+    """
+    os.makedirs(folder_path, exist_ok=True)
+    return folder_path
+
+
+def _get_log_filename(folder_path):
+    """
+    Generates a log file name based on the current date and time.
+    """
+    # Get the current date and time
+    timestamp = datetime.now().strftime('%m-%d-%Y_%H-%M')
+
+    # Generate the log file path
+    log_file_path = os.path.join(folder_path, f'log_{timestamp}.log')
+
+    return log_file_path
+
+
+def _cleanup_old_logs(folder_path, retention_days=7):
+    """
+    Deletes log files older than the retention period.
+
+    Args:
+        folder_path (str): Path to the logs folder.
+        retention_days (int): Number of days to retain log files.
+    """
+    # Get the current date and time
+    now = datetime.now()
+
+    # Iterate over the files in the logs folder
+    for filename in os.listdir(folder_path):
+
+        # Get the full file path
+        file_path = os.path.join(folder_path, filename)
+
+        # Check if the file is a log file. Only process log files
+        if os.path.isfile(file_path):
+
+            # If the file is a log file, get the creation time
+            file_creation_time = datetime.fromtimestamp(os.path.getctime(file_path))
+            
+            # Check if the file is older than the retention period
+            if now - file_creation_time > timedelta(days=retention_days):
+
+                # If the file is older than the retention period, delete it
+                os.remove(file_path)
+
+
+def configure_logging(verbose=False, logs_folder='logs', retention_days=7):
     """
     Configures the root logger with verbosity and formatting.
 
@@ -26,6 +79,15 @@ def configure_logging(verbose=False, log_file='project.log'):
     # File formatter
     file_formatter = logging.Formatter(log_format, datefmt=date_format)
 
+    # Ensure logs folder exists
+    logs_path = _create_logs_folder(logs_folder)
+
+    # Cleanup old logs
+    _cleanup_old_logs(logs_path, retention_days)
+
+    # Get log file path
+    log_file = _get_log_filename(logs_path)
+
     # Console formatter with color
     color_formatter = colorlog.ColoredFormatter(
         '%(log_color)s' + log_format,
@@ -40,7 +102,7 @@ def configure_logging(verbose=False, log_file='project.log'):
     )
 
     # File handler with log rotation
-    file_handler = RotatingFileHandler(log_file, maxBytes=10**6, backupCount=3)
+    file_handler = logging.FileHandler(log_file)
     file_handler.setFormatter(file_formatter)
     file_handler.setLevel(log_level)
 
@@ -57,7 +119,6 @@ def configure_logging(verbose=False, log_file='project.log'):
 
     # Avoid duplicate logs
     root_logger.propagate = False
-
 
 if __name__ == '__main__':
     configure_logging(verbose=True)
