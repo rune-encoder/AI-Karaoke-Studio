@@ -1,0 +1,1 @@
+from .process import process_karaoke_video

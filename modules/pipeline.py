@@ -4,11 +4,19 @@ from typing import Union
 import logging
 
 # Local Application Imports
-from .stem_processing import (process_audio_merging, process_audio_stem_separation)
-from .lyrics_processing import (process_audio_extract_lyric_timing, process_lyric_search, process_lyrics_modification)
-from .audio_pre_processing import pre_process_audio_file
 from .logging_config import configure_logging
+from .audio_pre_processing import pre_process_audio_file
+from .stem_processing import (
+    process_audio_stem_separation,
+    process_audio_merging
+)
+from .lyrics_processing import (
+    process_audio_extract_lyric_timing,
+    process_lyric_search, 
+    process_lyrics_modification
+)
 from .subtitle_processing import process_karaoke_subtitles
+from .video_processing import process_karaoke_video
 from .utilities import (get_project_root, ensure_directory_exists)
 
 # Initialize Logger
@@ -28,7 +36,7 @@ def run_pipeline(
     output_dir = ensure_directory_exists(project_root / "output")
 
     # 1. Validate input song file
-    # 2. Obtain song file hash 
+    # 2. Obtain song file hash
     # 3. Create a cache dir to store the working files
     # 4. Query audio file metadata from AcoustID API (title and artist)
     working_dir = pre_process_audio_file(
@@ -48,7 +56,7 @@ def run_pipeline(
     # using AudioSegment from PyDub
     process_audio_merging(working_dir, override=override_all)
 
-    # 1. Extract the segments (lyric transcription, timing, and confidence scores) 
+    # 1. Extract the segments (lyric transcription, timing, and confidence scores)
     # using the Whisper OpenAI API
     # 2. Reformat the data into a JSON file
     process_audio_extract_lyric_timing(working_dir, override=override_all)
@@ -64,4 +72,10 @@ def run_pipeline(
     # 2. Clean the resonse, parse the response, reformat the data into a JSON file
     process_lyrics_modification(working_dir, override=override_all)
 
-    # process_karaoke_subtitles(working_dir, override=override_all)
+    # 1. Generate the karaoke subtitles (.ass file) using the "merged audio"
+    # and "modified formatted lyrics"
+    # ! REVISIT
+    process_karaoke_subtitles(working_dir, override=override_all)
+
+    # ! REVISIT
+    process_karaoke_video(working_dir, output_dir)

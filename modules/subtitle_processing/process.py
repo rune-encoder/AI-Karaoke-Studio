@@ -3,7 +3,6 @@
 from pathlib import Path
 from typing import Union
 import logging
-from pprint import pprint
 
 # Local Application Imports
 from .config import get_available_colors, get_font_list
@@ -13,6 +12,10 @@ from .create_ass_file import create_ass_file
 
 # Initialize Logger
 logger = logging.getLogger(__name__)
+
+# ! REVISIT FILE ===============================================================
+# ! REVISIT FILE ===============================================================
+# ! REVISIT FILE ===============================================================
 
 def process_karaoke_subtitles(
     output_path: Union[str, Path],
@@ -40,23 +43,21 @@ def process_karaoke_subtitles(
         
         # Load the lyrics
         lyrics = load_json(lyrics_file)
-        pprint(lyrics, sort_dicts=False)
 
         # Extract audio duration (assuming you have an input file for the instrumental audio)
         audio_duration = extract_audio_duration(audio_file)
-        print(audio_duration)
 
         if audio_duration is None:
             raise ValueError(f"Could not extract audio duration from {audio_duration}")
 
-        for verse in lyrics:
-            if verse['start'] is None or verse['end'] is None:
-                logger.error(f"Verse {verse['verse_number']} has invalid start or end times. Skipping this verse...")
-                continue
-            for word in verse['words']:
-                if word['start'] is None or word['end'] is None:
-                    logger.error(f"Word {word['word_number']} in verse {verse['verse_number']} has invalid start or end times. Skipping this word...")
-                    continue
+        # for verse in lyrics:
+        #     if verse['start'] is None or verse['end'] is None:
+        #         logger.error(f"Verse {verse['verse_number']} has invalid start or end times. Skipping this verse...")
+        #         continue
+        #     for word in verse['words']:
+        #         if word['start'] is None or word['end'] is None:
+        #             logger.error(f"Word {word['word_number']} in verse {verse['verse_number']} has invalid start or end times. Skipping this word...")
+        #             continue
 
 
         create_ass_file(
