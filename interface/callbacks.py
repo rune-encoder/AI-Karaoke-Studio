@@ -1,21 +1,20 @@
 # Standard Library Imports
 from pathlib import Path
-from typing import Union
 import logging
 import json
 
 # Local Application Imports
-from .handlers import handle_audio_processing
-
-from modules import (
-    fetch_and_save_lyrics,
-    perform_lyric_enhancement,
-)
-
 from .helpers import (
     display_dataframe_from_lyrics,
     load_json_file,
     save_json_file
+)
+from .handlers import handle_audio_processing
+from modules import (
+    fetch_and_save_lyrics,
+    perform_lyric_enhancement,
+    process_karaoke_subtitles,
+    process_karaoke_video
 )
 
 # Initialize logger
@@ -220,3 +219,72 @@ def save_fetched_lyrics_callback(
     except Exception as e:
         logger.error(f"Error in save_fetched_lyrics_callback: {e}")
         return (state_fetched_lyrics_json, f"Error: {e}")
+
+
+def generate_subtitles_and_video_callback(
+    working_dir: str,
+
+    # Subtitles parameters
+    font: str,
+    fontsize: int,
+    primary_color: str,
+    secondary_color: str,
+
+    # Video parameters
+    resolution: str,
+    preset: str,
+    crf: int,
+    fps: int,
+    bitrate: str,
+    audio_bitrate: str,
+
+    # Additional or override flags
+    override_subs: bool,
+    output_dir: str
+):
+    """
+    1) Generate Karaoke Subtitles (karaoke_subtitles.ass) 
+       from (modified_lyrics.json or raw_lyrics.json).
+    2) Generate Karaoke Video (karaoke_video.mp4).
+    3) Return the final video path or a success message.
+    """
+
+    try:
+        # ------------- Subtitles -------------
+        screen_width, screen_height = map(int, resolution.split('x'))
+
+        # Call your function (process_karaoke_subtitles) 
+        # that produces "karaoke_subtitles.ass" in working_dir
+        process_karaoke_subtitles(
+            output_path=Path(working_dir),
+            override=override_subs,
+            file_name="karaoke_subtitles.ass",
+
+            # Subtitle Settings
+            font=font,
+            fontsize=fontsize,
+            primary_color=primary_color,
+            secondary_color=secondary_color,
+            screen_width=screen_width,
+            screen_height=screen_height,
+        )
+
+        # ------------- Video -------------
+        video_output_path = process_karaoke_video(
+            working_dir=Path(working_dir),
+            output_path=Path(output_dir),
+
+            # Video Settings
+            resolution=resolution,
+            preset=preset,
+            crf=crf,
+            fps=fps,
+            bitrate=bitrate,
+            audio_bitrate=audio_bitrate,
+        )
+
+        return video_output_path
+
+    except Exception as e:
+        logger.error(f"Error generating subtitles or video: {e}")
+        return f"Error: {e}"

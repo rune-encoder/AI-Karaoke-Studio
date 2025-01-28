@@ -1,11 +1,13 @@
 # Standard Library Imports
 from typing import List, Union
 from pathlib import Path
-import json
 import logging
+import json
+import os
 
 # Third-Party Imports
 import pandas as pd
+import gradio as gr
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -102,3 +104,48 @@ def display_dataframe_from_lyrics(json_path: Union[str, Path]) -> pd.DataFrame:
     except Exception as e:
         print(f"Error reading {json_path}: {e}")
         return pd.DataFrame(columns=["Lyrics"])
+
+
+def check_modify_ai_availability(working_dir: str) -> dict:
+    """
+    Returns a dict instructing Gradio to update the 'Modify with AI' button 
+    so it is enabled (interactive=True) only if:
+     - raw_lyrics.json exists, AND
+     - reference_lyrics.json (or official_lyrics.json) exists.
+    Otherwise, disable it.
+    """
+    if not working_dir:
+        return gr.update(interactive=False)  # No working dir -> disable
+    
+    wd = Path(working_dir)
+    raw_path = wd / "raw_lyrics.json"
+    ref_path = wd / "reference_lyrics.json"
+
+    if raw_path.is_file() and ref_path.is_file():
+        # Both files exist -> enable button
+        return gr.update(interactive=True)
+    else:
+        # Something missing -> disable
+        return gr.update(interactive=False)
+
+
+def check_generate_karaoke_availability(working_dir: str) -> dict:
+    """
+    Returns a dict instructing Gradio to update the 'Generate Karaoke' button 
+    so it is enabled only if either:
+     - raw_lyrics.json exists, OR
+     - modified_lyrics.json exists.
+    Otherwise, disable it.
+    """
+    if not working_dir:
+        return gr.update(interactive=False)
+    
+    wd = Path(working_dir)
+    raw_path = wd / "raw_lyrics.json"
+    modified_path = wd / "modified_lyrics.json"
+
+    if raw_path.is_file() or modified_path.is_file():
+        # At least one of them exists -> enable
+        return gr.update(interactive=True)
+    else:
+        return gr.update(interactive=False)

@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import Union
+
 def format_time(seconds):
     """Convert time in seconds to ASS format (h:mm:ss.cs)."""
     hours = int(seconds // 3600)
@@ -18,12 +21,20 @@ def write_section(file, section_name, content):
     file.write("\n")
 
 
-def write_script_info(file, title="Karaoke Subtitles"):
-    """Write the script information section."""
-    # Create the content for the script info section, including the title and script type
-    content = f"Title: {title}\nScriptType: v4.00+\nPlayDepth: 0\n"
-    
-    # Write the script info section using the `write_section` helper
+def write_script_info(
+    file, 
+    title="Karaoke Subtitles",
+    screen_width=1280, 
+    screen_height=720
+):
+    # Note the new parameters and lines for resolution
+    content = (
+        f"Title: {title}\n"
+        f"ScriptType: v4.00+\n"
+        f"PlayResX: {screen_width}\n"
+        f"PlayResY: {screen_height}\n"
+        "PlayDepth: 0\n"
+    )
     write_section(file, "Script Info", content)
 
 
@@ -264,21 +275,21 @@ def extend_last_event(f, verses, audio_duration):
 
 
 def create_ass_file(
-    verses, 
-    output_path, 
-    audio_duration, 
-    font="Arial", 
-    fontsize=48, 
-    primary_color="&H00FFFFFF",
-    secondary_color="&H0000FFFF",
-    title="Karaoke", 
-    screen_width=1280, 
-    screen_height=720
+    verses_data: dict, 
+    output_path: Union[str, Path],
+    audio_duration: float,
+    font: str = "Arial",
+    fontsize: int = 24,
+    primary_color: str = "White",
+    secondary_color: str = "Yellow",
+    title: str = "Karaoke",
+    screen_width: int = 1280, 
+    screen_height: int = 720
 ):
     """Generate an ASS subtitle file."""
     try:
         # Determine the start time of the first word in the verses
-        first_word_start = verses[0]["words"][0]["start"]
+        first_word_start = verses_data[0]["words"][0]["start"]
 
         # Calculate the duration for the title display (25% of the pre-lyrics time)
         title_duration = first_word_start * 0.25
@@ -289,7 +300,12 @@ def create_ass_file(
         # Open the output ASS file for writing
         with open(output_path, "w", encoding="utf-8") as file:
             # Write general script information such as title and script type
-            write_script_info(file, title)
+            write_script_info(
+                file,
+                title=title,
+                screen_width=screen_width,
+                screen_height=screen_height
+            )
 
             # Write subtitle styles (e.g., font and alignment settings)
             write_styles(file, font, fontsize, primary_color, secondary_color)
@@ -307,15 +323,15 @@ def create_ass_file(
             verses_start_time = title_duration + loader_duration
 
             # Adjust the start and end times of each verse
-            for verse in verses:
+            for verse in verses_data:
                 verse["start"] += verses_start_time
                 verse["end"] += verses_start_time
 
             # Write the events for the lyrics with appropriate timing and formatting
-            write_lyrics_events(file, verses, primary_color=primary_color, highlight_color=secondary_color, loader_color=secondary_color)
+            write_lyrics_events(file, verses_data, primary_color=primary_color, highlight_color=secondary_color, loader_color=secondary_color)
 
             # Extend the last subtitle event to cover any remaining audio duration
-            extend_last_event(file, verses, audio_duration)
+            extend_last_event(file, verses_data, audio_duration)
 
     except Exception as e:
         # Handle and re-raise any errors that occur during file generation

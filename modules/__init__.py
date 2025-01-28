@@ -15,3 +15,13 @@ from .lyrics_processing import (
     fetch_and_save_lyrics,
     perform_lyric_enhancement
 )
+
+from .subtitle_processing import (
+    process_karaoke_subtitles,
+    get_available_colors,
+    get_font_list
+)
+
+from .video_processing import (
+    process_karaoke_video
+)

@@ -17,11 +17,17 @@ def normalize_path(path):
 def process_karaoke_video(
     working_dir: Union[str, Path],
     output_path: Union[str, Path],
-    # override: bool = False,
-    # file_name: str = "karaoke_video.mp4"
+
+    resolution: str = "1280x720",
+    preset: str = "fast",
+    crf: int = 23,
+    fps: int = 24,
+    bitrate: str = "3000k",
+    audio_bitrate: str = "192k",
 ):
     metadata_file = Path(working_dir) / "metadata.json"
     karaoke_audio = Path(working_dir) / "karaoke_audio.mp3"
+    # karaoke_audio = Path(r"C:\Users\chris\ai_karaoke_app\input\play_minstrel_play.mp3")
     karaoke_subtitles = Path(working_dir) / "karaoke_subtitles.ass"
 
     try:
@@ -38,15 +44,20 @@ def process_karaoke_video(
         relative_subtitles = karaoke_subtitles.relative_to(working_dir.parent.parent)
         relative_output = Path(output_path.name) / f"{sanitized_title}_karaoke.mp4"
 
-        print(karaoke_audio.as_posix())
-        print(relative_subtitles.as_posix())
-        print(relative_output.as_posix())
-
         generate_karaoke_video(
             audio_path=karaoke_audio.as_posix(),
             ass_path=relative_subtitles.as_posix(),
             output_path=relative_output.as_posix(),
+
+            resolution=resolution,
+            preset=preset,
+            crf=crf,
+            fps=fps,
+            bitrate=bitrate,
+            audio_bitrate=audio_bitrate
         )
+
+        return relative_output
 
     except Exception as e:
         logger.error(f"Error loading metadata: {e}")
