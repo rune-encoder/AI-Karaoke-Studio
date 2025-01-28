@@ -2,19 +2,11 @@
 import gradio as gr
 
 # Local Application Imports
-from interface.callbacks import (
+from .callbacks import (
     process_audio_callback,
-    refresh_raw_lyrics_callback,
-    fetch_official_lyrics_callback,
+    fetch_reference_lyrics_callback,
     save_fetched_lyrics_callback,
     modify_lyrics_callback,
-)
-
-from interface.helpers import (
-    display_lyrics_format,
-    load_json_file,
-    save_json_file,
-
 )
 
 
@@ -48,7 +40,7 @@ def main_app(cache_dir, output_dir):
         state_fetched_lyrics_display = gr.State(value="")
 
         # ---------------------------- SECTION 1 ----------------------------
-        gr.Markdown("# _________________________________________________________")
+        gr.Markdown("# _____")
         with gr.Row():
             with gr.Column():
                 audio_input = gr.File(
@@ -58,7 +50,7 @@ def main_app(cache_dir, output_dir):
                 )
 
                 with gr.Accordion("Advanced Options", open=False):
-                    override_checkbox = gr.Checkbox(
+                    override_audio_processing = gr.Checkbox(
                         label="Override?",
                         value=False,
                     )
@@ -69,38 +61,45 @@ def main_app(cache_dir, output_dir):
                 )
 
         # ---------------------------- SECTION 2 ----------------------------
-        gr.Markdown("# _________________________________________________________")
+        gr.Markdown("# _____")
         with gr.Row():
-            with gr.Column():
-                raw_lyrics_box = gr.Textbox(
-                    label="Processed Lyrics (Used for Karaoke)",
-                    lines=20,
-                    interactive=False,  # user sees but does not edit
-                )
-                with gr.Row():
-                    refresh_button = gr.Button("🔄 Refresh Lyrics",)
-                    modify_button = gr.Button("🪄 Modify with AI",)
-
             with gr.Column():
                 fetched_lyrics_box = gr.Textbox(
                     label="Reference Lyrics (Editable)",
                     lines=20,
-                    interactive=True,   # user can edit official lyrics
+                    interactive=True,
                 )
                 with gr.Row():
                     fetch_button = gr.Button("🌐 Fetch Reference Lyrics")
                     save_button = gr.Button("💾 Update Reference Lyrics")
 
+            with gr.Column():
+                raw_lyrics_box = gr.Dataframe(
+                    headers=["Processed Lyrics (Used for Karaoke)"],
+                    label="Processed Lyrics (Used for Karaoke)",
+                    datatype=["str"],
+                    interactive=False,
+                    show_label=False,
+                    max_height=465,
+                )
+                with gr.Row():
+                    modify_button = gr.Button(
+                        "🪄 Modify with AI",
+                        variant="primary",
+                    )
+
         with gr.Row():
             with gr.Accordion("Advanced Options", open=False):
-                # ! REVISIT AND CHANGE
-                override_checkbox = gr.Checkbox(
-                    label="Override?",
+                override_fetch_lyrics = gr.Checkbox(
+                    label="Re-fetch lyrics from API? (Overrides 'Fetch Reference Lyrics' button)",
                     value=False,
                 )
-
+                override_modify_lyrics = gr.Checkbox(
+                    label="Re-send lyrics for alignment? (Overrides 'Modify with AI' button)",
+                    value=False,
+                )
         # ---------------------------- SECTION 3 ----------------------------
-        gr.Markdown("# _________________________________________________________")
+        gr.Markdown("# _____")
         with gr.Row():
             process2_button = gr.Button(
                 "Process (Placeholder)",
@@ -123,11 +122,11 @@ def main_app(cache_dir, output_dir):
             fn=process_audio_callback,
             inputs=[
                 audio_input,
-                override_checkbox,
+                override_audio_processing,
                 state_working_dir,
                 state_lyrics_json,
                 state_lyrics_display,
-                gr.State(cache_dir), # Hidden state: cache_dir
+                gr.State(cache_dir),  # Hidden state: cache_dir
             ],
             outputs=[
                 state_working_dir,
@@ -141,52 +140,13 @@ def main_app(cache_dir, output_dir):
             outputs=raw_lyrics_box
         )
 
-        # (Secondary) 🔄 Refresh Lyrics Button
-        # Updates States: lyrics, lyrics to display
-        # Displays the updated `state_lyrics_display` in the `lyrics_box`
-        refresh_button.click(
-            fn=refresh_raw_lyrics_callback,
-            inputs=[
-                state_working_dir,
-                state_lyrics_json,
-                state_lyrics_display
-            ],
-            outputs=[
-                state_lyrics_json,
-                state_lyrics_display
-            ]
-        ).then(
-            fn=lambda disp: disp,
-            inputs=state_lyrics_display,
-            outputs=raw_lyrics_box
-        )
-
-        # (Secondary) 🪄 Modify with AI Button
-        # Updates States: lyrics, lyrics to display
-        # Displays the updated `state_lyrics_display` in the `lyrics_box`
-        modify_button.click(
-            fn=modify_lyrics_callback,
-            inputs=[
-                state_working_dir,
-                state_lyrics_json,
-                state_lyrics_display
-            ],
-            outputs=[
-                state_lyrics_json,
-                state_lyrics_display
-            ]
-        ).then(
-            fn=lambda disp: disp,
-            inputs=state_lyrics_display,
-            outputs=raw_lyrics_box
-        )
-
         # (Secondary) 🌐 Fetch Reference Lyrics Button
         # Updates States: fetched lyrics, fetched lyrics to display
         # Displays the updated `state_fetched_lyrics_display` in the `fetched_lyrics_box`
         fetch_button.click(
-            fn=fetch_official_lyrics_callback,
+            fn=fetch_reference_lyrics_callback,
             inputs=[
+                override_fetch_lyrics,
                 state_working_dir,
                 state_fetched_lyrics_json,
                 state_fetched_lyrics_display
@@ -216,6 +176,27 @@ def main_app(cache_dir, output_dir):
                 state_fetched_lyrics_json,
                 state_fetched_lyrics_display
             ]
+        )
+
+        # (Secondary) 🪄 Modify with AI Button
+        # Updates States: lyrics, lyrics to display
+        # Displays the updated `state_lyrics_display` in the `lyrics_box`
+        modify_button.click(
+            fn=modify_lyrics_callback,
+            inputs=[
+                override_modify_lyrics,
+                state_working_dir,
+                state_lyrics_json,
+                state_lyrics_display
+            ],
+            outputs=[
+                state_lyrics_json,
+                state_lyrics_display
+            ]
+        ).then(
+            fn=lambda disp: disp,
+            inputs=state_lyrics_display,
+            outputs=raw_lyrics_box
         )
 
         # Process (placeholder) -> merges raw + fetched text

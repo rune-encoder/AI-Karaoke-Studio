@@ -13,7 +13,7 @@ from modules import (
 )
 
 from .helpers import (
-    display_lyrics_format,
+    display_dataframe_from_lyrics,
     load_json_file,
     save_json_file
 )
@@ -30,7 +30,6 @@ def process_audio_callback(
     state_lyrics_json,
     state_lyrics_display,
     cache_dir,
-    output_dir
 ):
     """
     1) Runs the audio processing pipeline -> `raw_lyrics.json`
@@ -50,7 +49,7 @@ def process_audio_callback(
         raw_lyrics_path, working_dir = handle_audio_processing(
             audio_file,
             cache_dir,
-            override,
+            override_all=override,
             file_name="raw_lyrics.json"
         )
 
@@ -65,7 +64,7 @@ def process_audio_callback(
             return "Error: No raw_lyrics.json found or empty."
 
         # Create display text
-        display_text = display_lyrics_format(raw_lyrics_path)
+        display_text = display_dataframe_from_lyrics(raw_lyrics_path)
 
         # Update State: lyrics, lyrics to display
         state_lyrics_json = raw_lyrics_json
@@ -82,57 +81,14 @@ def process_audio_callback(
         return (None, None, f"Error: {e}")
 
 
-def refresh_raw_lyrics_callback(
-    state_working_dir,
-    state_lyrics_json,
-    state_lyrics_display
-):
-    """
-    1) Loads `raw_lyrics.json` from the working directory.
-    2) Updates the states:
-        `state_lyrics_json` -> `raw_lyrics.json`, 
-        `state_lyrics_display` -> display text.
-    """
-    try:
-        # Check if working directory is set
-        if not state_working_dir:
-            return (state_lyrics_json, "Error: working dir not set")
-
-        # Path to `raw_lyrics.json`
-        raw_lyrics_path = Path(state_working_dir) / "raw_lyrics.json"
-
-        # Check if raw_lyrics.json exists
-        if not raw_lyrics_path.exists():
-            return (state_lyrics_json, "raw_lyrics.json not found.")
-
-        # Load the `raw_lyrics.json`
-        new_data = load_json_file(raw_lyrics_path)
-
-        # Check if the file is empty or not found
-        if not new_data:
-            return (state_lyrics_json, "raw_lyrics.json is empty?")
-
-        # Convert raw_lyrics format to a displayed text
-        display_text = display_lyrics_format(raw_lyrics_path)
-
-        # Update States: lyrics, lyrics to display
-        state_lyrics_json = new_data
-        state_lyrics_display = display_text
-
-        return (state_lyrics_json, state_lyrics_display)
-
-    except Exception as e:
-        logger.error(f"Error in refresh_raw_lyrics_callback: {e}")
-        return (state_lyrics_json, f"Error: {e}")
-
-
 def modify_lyrics_callback(
+    override,
     state_working_dir,
     state_lyrics_json,
     state_lyrics_display
 ):
     """
-    1) Calls AI lyric enhancement using official_lyrics + raw_lyrics -> modifies time alignment
+    1) Calls AI lyric enhancement using reference_lyrics + raw_lyrics -> modifies time alignment
         Override (Default: True) will force re-run the AI model.
     2) Updates the states: 
         `state_lyrics_json` -> `modified_lyrics.json`, 
@@ -143,13 +99,13 @@ def modify_lyrics_callback(
         if not state_working_dir:
             return (state_lyrics_json, "Error: working dir not set")
 
-        # Process our `raw_lyrics.json` and `official_lyrics.json` to create
+        # Process our `raw_lyrics.json` and `reference_lyrics.json` to create
         # a `modified_lyrics.json` which is a corrected and aligned version
         # of the original transcribed `raw_lyrics.json`.
         # Returns: Path to the modified lyrics file
         modified_lyrics_path = perform_lyric_enhancement(
             output_path=state_working_dir,
-            override=True,
+            override=override,
             file_name="modified_lyrics.json"
         )
 
@@ -159,7 +115,7 @@ def modify_lyrics_callback(
             return (state_lyrics_json, "modified_lyrics.json is empty?")
 
         # Convert modified_lyrics format to a displayed text
-        display_text = display_lyrics_format(modified_lyrics_path)
+        display_text = display_dataframe_from_lyrics(modified_lyrics_path)
 
         # Update States: lyrics, lyrics to display
         state_lyrics_json = new_data
@@ -172,17 +128,18 @@ def modify_lyrics_callback(
         return (state_lyrics_json, f"Error: {e}")
 
 
-def fetch_official_lyrics_callback(
+def fetch_reference_lyrics_callback(
+    override,
     state_working_dir,
     state_fetched_lyrics_json,
     state_fetched_lyrics_display
 ):
     """
-    1) Runs or loads official lyrics from `official_lyrics.json`.
+    1) Runs or loads official lyrics from `reference_lyrics.json`.
         Override (Default: True) will force re-fetch the lyrics in every call.
     2) If not present, calls `fetch_and_save_lyrics(...)` to retrieve them.
     3) Updates the states:
-        `state_fetched_lyrics_json` -> `official_lyrics.json`,
+        `state_fetched_lyrics_json` -> `reference_lyrics.json`,
         `state_fetched_lyrics_display` -> official lyrics to display.
     """
     try:
@@ -191,17 +148,17 @@ def fetch_official_lyrics_callback(
             return (state_fetched_lyrics_json, "Error: working dir not set")
 
         # Attempt to fetch reference lyrics + save
-        # (this will skip if `official_lyrics.json` already exists, unless override).
+        # (this will skip if `reference_lyrics.json` already exists, unless override).
         fetch_and_save_lyrics(
             state_working_dir,
-            override=True,
-            file_name="official_lyrics.json"
+            override=override,
+            file_name="reference_lyrics.json"
         )
 
-        # Path to official_lyrics.json
-        ref_lyrics_path = Path(state_working_dir) / "official_lyrics.json"
+        # Path to reference_lyrics.json
+        ref_lyrics_path = Path(state_working_dir) / "reference_lyrics.json"
 
-        # Load the `official_lyrics.json` after fetching from online source
+        # Load the `reference_lyrics.json` after fetching from online source
         lyrics_data = load_json_file(ref_lyrics_path)
 
         # Check if the file is empty or not found
@@ -223,7 +180,7 @@ def fetch_official_lyrics_callback(
         return (state_fetched_lyrics_json, state_fetched_lyrics_display)
 
     except Exception as e:
-        logger.error(f"Error in fetch_official_lyrics_callback: {e}")
+        logger.error(f"Error in fetch_reference_lyrics_callback: {e}")
         return (state_fetched_lyrics_json, f"Error: {e}")
 
 
@@ -234,7 +191,7 @@ def save_fetched_lyrics_callback(
     state_fetched_lyrics_display
 ):
     """
-    1) Takes user-edited text from the right textbox, splits into lines, and overwrites official_lyrics.json
+    1) Takes user-edited text from the right textbox, splits into lines, and overwrites reference_lyrics.json
     2) Updates the states:
         `state_fetched_lyrics_json` -> list of lines, 
         `state_fetched_lyrics_display` -> user-edited text.
@@ -244,14 +201,14 @@ def save_fetched_lyrics_callback(
         if not state_working_dir:
             return (state_fetched_lyrics_json, "Error: working dir not set")
 
-        # Path to official_lyrics.json
-        ref_lyrics_path = Path(state_working_dir) / "official_lyrics.json"
+        # Path to reference_lyrics.json
+        ref_lyrics_path = Path(state_working_dir) / "reference_lyrics.json"
 
         # Turn the multiline string into a list of lines.
         # Each (str) line is a verse.
         new_lines = fetched_lyrics_str.splitlines()
 
-        # Overwrite official_lyrics.json with the new lines
+        # Overwrite reference_lyrics.json with the new lines
         save_json_file(new_lines, ref_lyrics_path)
 
         # Update the states: fetched lyrics, fetched lyrics to display

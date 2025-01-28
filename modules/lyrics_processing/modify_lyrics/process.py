@@ -19,7 +19,7 @@ def perform_lyric_enhancement(
     """
     Processes and modifies lyrics using AI, saving the output to a file.
 
-    This function checks for the existence of required input files (`official_lyrics.json`
+    This function checks for the existence of required input files (`reference_lyrics.json`
     and `raw_lyrics.json`) and skips processing if the output file already exists
     unless the override flag is set.
 
@@ -44,18 +44,18 @@ def perform_lyric_enhancement(
                 f"Raw lyrics file does not exist. Skipping lyrics modification...")
             return
 
-        official_lyrics_file = Path(output_path) / "official_lyrics.json"
-        if not official_lyrics_file.exists():
+        reference_lyrics_file = Path(output_path) / "reference_lyrics.json"
+        if not reference_lyrics_file.exists():
             logger.warning(
                 f"Official lyrics file does not exist. Skipping lyrics modification...")
             return
 
         # Step 3: Load the input files
         raw_lyrics = load_json(raw_lyrics_file)
-        official_lyrics = load_json(official_lyrics_file)
+        reference_lyrics = load_json(reference_lyrics_file)
 
         # Step 4: Modify the lyrics using the AI
-        modified_lyrics = _modify_lyrics_ai(raw_lyrics, official_lyrics)
+        modified_lyrics = _modify_lyrics_ai(raw_lyrics, reference_lyrics)
 
         # Step 5: Save the modified lyrics to the output file
         save_json(modified_lyrics, output_file)
