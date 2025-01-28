@@ -2,7 +2,6 @@
 from pathlib import Path
 from typing import Union
 import logging
-import json
 
 # Local Application Imports
 from .main import _fetch_official_lyrics
@@ -11,7 +10,7 @@ from ...utilities import load_json, save_json
 # Initialize Logger
 logger = logging.getLogger(__name__)
 
-def process_lyric_search(
+def fetch_and_save_lyrics(
     output_path: Union[str, Path],
     override: bool = False,
     file_name: str = "official_lyrics.json",
@@ -37,9 +36,11 @@ def process_lyric_search(
     
     if not metadata_file.exists():
         logger.error("Metadata file does not exist. Skipping lyric search...")
-        return
+        raise FileNotFoundError("Metadata file does not exist.")
 
     try:
+        logger.info("Fetching official audio lyrics to reference for AI modification...")
+        
         # Load the audio metadata file
         metadata = load_json(metadata_file)
 
@@ -53,4 +54,4 @@ def process_lyric_search(
 
     except Exception as e:
         logger.error(f"Error processing lyric search: {e}")
-        raise
+        raise RuntimeError(f"Error processing lyric search: {e}")

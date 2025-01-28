@@ -1,2 +1,2 @@
-from .stem_separation import process_audio_stem_separation
-from .stem_merging import process_audio_merging
+from .stem_separation import separate_audio_stems
+from .stem_merging import merge_audio_stems

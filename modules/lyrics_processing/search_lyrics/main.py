@@ -41,22 +41,21 @@ def _fetch_official_lyrics(metadata):
         url = _search_genius_lyrics(title, artist, api_key=GENIUS_API_TOKEN)
 
         if not url:
-            logger.warning(f"No lyrics found for '{title}' by '{artist}'.")
-            return 
+            logger.error(f"No lyrics found for '{title}' by '{artist}'.")
+            raise ValueError(f"No lyrics found for '{title}' by '{artist}'.") 
         else:
             logger.debug(f"Lyrics found at URL: {url}")
 
         # Scrape lyrics from the Genius page
         lyrics = _scrape_genius_lyrics(url)
         if not lyrics:
-            logger.warning(f"Lyrics could not be scraped for '{title}' by '{artist}'.")
-            return 
+            logger.error(f"Lyrics could not be scraped for '{title}' by '{artist}'.")
+            raise ValueError(f"Lyrics could not be scraped for '{title}' by '{artist}'.") 
 
         # Clean the scraped lyrics
         cleaned_lyrics = _clean_genius_lyrics(lyrics)
-
         return cleaned_lyrics
 
     except Exception as e:
         logger.error(f"Error fetching lyrics: {e}")
-        raise
+        raise RuntimeError(f"Error fetching lyrics: {e}")

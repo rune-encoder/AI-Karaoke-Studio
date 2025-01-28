@@ -11,7 +11,7 @@ from ...utilities import load_json, save_json
 logger = logging.getLogger(__name__)
 
 
-def process_lyrics_modification(
+def perform_lyric_enhancement(
     output_path: Union[str, Path],
     override: bool = False,
     file_name: str = "modified_lyrics.json",
@@ -35,7 +35,7 @@ def process_lyrics_modification(
             logger.info(
                 f"Skipping lyrics modification... AI modified lyrics file already exists in the output directory."
             )
-            return
+            return output_file
 
         # Step 2: Ensure required input files exist
         raw_lyrics_file = Path(output_path) / "raw_lyrics.json"
@@ -60,8 +60,7 @@ def process_lyrics_modification(
         # Step 5: Save the modified lyrics to the output file
         save_json(modified_lyrics, output_file)
         logger.info("Lyrics ai modification completed and saved successfully!")
-
-        return
+        return output_file
 
     except Exception as e:
         logger.error(f"Error during lyrics modification process: {e}")

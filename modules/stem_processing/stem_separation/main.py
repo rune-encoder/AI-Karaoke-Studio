@@ -31,7 +31,7 @@ from .utilities import (
 logger = logging.getLogger(__name__)
 
 
-def _audio_stem_separation(
+def _excecute_stem_separation(
     input_file: Union[str, Path],
     output_path: Union[str, Path],
     config: AudioSeparationConfig = AudioSeparationConfig(),
@@ -70,11 +70,10 @@ def _audio_stem_separation(
         # Execute the command to separate the audio stems using subprocess
         if not _execute_command(cmd):
             # Early exit if the command fails
-            return None
+            return
 
         # Organize the output files removing them from subdirectories
         _organize_outputs(output_path)
-        logger.info(f"Audio stems separated successfully!")
 
     except Exception as e:
         logger.error(f"Error in stem separation: {e}")

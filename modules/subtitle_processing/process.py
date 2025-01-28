@@ -1,4 +1,3 @@
-
 # Standard Library Imports
 from pathlib import Path
 from typing import Union

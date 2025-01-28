@@ -1,1 +1,1 @@
-from .process import process_audio_stem_separation
+from .process import separate_audio_stems

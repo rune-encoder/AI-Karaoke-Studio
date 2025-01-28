@@ -8,7 +8,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def _merge_audio_stems(
+def _excecute_stem_merge(
     stems_directory: Union[str, Path],
     output_file: Union[str, Path],
     output_format: str = 'mp3'
@@ -44,7 +44,7 @@ def _merge_audio_stems(
 
         # Step 3: Export the merged audio to the specified format
         merged_audio.export(output_file, format=output_format)
-        logger.info(f"Audio stems merged successfully!")
+        return
 
     except Exception as e:
         logger.error(f"Error in merging audio stems: {e}")

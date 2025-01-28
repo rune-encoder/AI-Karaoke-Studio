@@ -1,1 +1,1 @@
-from .process import process_lyrics_modification
+from .process import perform_lyric_enhancement
