@@ -1,1 +1,1 @@
-from .process import process_lyric_search
+from .process import fetch_and_save_lyrics

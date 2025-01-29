@@ -1,13 +1,11 @@
 # Standard Library Imports
+from .config import EXTENSIONS
 from pathlib import Path
 import logging
 import hashlib
 
 # Initialize Logger
 logger = logging.getLogger(__name__)
-
-# Local Application Imports
-from .config import EXTENSIONS
 
 
 def _create_directory(path):
@@ -24,29 +22,6 @@ def _create_directory(path):
         path.mkdir(parents=True, exist_ok=True)
         logger.debug(f"Created directory: `./{path.stem}`")
     return path
-
-
-def _validate_audio_file(file_path):
-    """
-    Validate the existence and extension of an audio file.
-
-    Args:
-        file_path (str): Path to the audio file.
-
-    Returns:
-        bool: True if the file is valid, False otherwise.
-    """
-    file = Path(file_path)
-
-    # Check if the file exists and has a valid extension
-    if not file.exists():
-        logger.error(f"Audio file not found: {file_path}")
-        return False
-
-    if file.suffix.lower().lstrip(".") not in EXTENSIONS:
-        logger.error(f"Unsupported file extension: {file.suffix}")
-        return False
-    return True
 
 
 def _get_file_hash(file_path):
@@ -74,3 +49,26 @@ def _get_file_hash(file_path):
     # Return the hexadecimal representation of the hash
     logger.debug(f"File hash: {hash_func.hexdigest()}")
     return hash_func.hexdigest()
+
+
+def _validate_audio_file(file_path):
+    """
+    Validate the existence and extension of an audio file.
+
+    Args:
+        file_path (str): Path to the audio file.
+
+    Returns:
+        bool: True if the file is valid, False otherwise.
+    """
+    file = Path(file_path)
+
+    # Check if the file exists and has a valid extension
+    if not file.exists():
+        logger.error(f"Audio file not found: {file_path}")
+        return False
+
+    if file.suffix.lower().lstrip(".") not in EXTENSIONS:
+        logger.error(f"Unsupported file extension: {file.suffix}")
+        return False
+    return True

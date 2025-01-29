@@ -1,4 +1,6 @@
+# Third-party imports
 import matplotlib.font_manager as fm
+
 
 def get_font_list():
     """Retrieve a list of unique font names."""

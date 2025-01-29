@@ -1,1 +1,1 @@
-from .process import process_audio_merging
+from .process import merge_audio_stems
