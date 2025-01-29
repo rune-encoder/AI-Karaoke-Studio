@@ -2,6 +2,8 @@
 from pathlib import Path
 from typing import Union
 
+# Local Application Imports
+from .config import (get_available_colors, validate_and_get_color)
 
 def format_time(seconds: float) -> str:
     """
@@ -72,7 +74,7 @@ def write_styles(
         "Alignment, MarginL, MarginR, MarginV, Encoding\n"
         f"Style: Default,{font},{fontsize},{primary_color},{secondary_color},"
         # BackColour: transparent
-        f"{outline_color},&H00000000,"
+        f"{outline_color},{shadow_color},"              # Use shadow_color instead of hardcoded black &H00000000
         "0,0,0,0,"                                      # Bold, Italic, Underline, StrikeOut
         "100,100,0,0,"                                  # ScaleX, ScaleY, Spacing, Angle
         # BorderStyle=1, Outline=..., Shadow=..., Align=5
@@ -364,8 +366,8 @@ def create_ass_file(
     secondary_color: str = "&H0000FFFF",  # Yellow or other highlight color
     outline_color: str = "&H00000000",    # Outline color (black)
     outline_size: int = 2,
-    shadow_size: int = 0,
     shadow_color: str = "&H00000000",
+    shadow_size: int = 0,
     title: str = "Karaoke",
     screen_width: int = 1280,
     screen_height: int = 720,
@@ -381,6 +383,12 @@ def create_ass_file(
       - Extended last event to audio end
     """
     try:
+        available_colors = get_available_colors()
+        primary_color = validate_and_get_color(primary_color, "&H00FFFFFF", available_colors)
+        secondary_color = validate_and_get_color(secondary_color, "&H0000FFFF", available_colors)
+        outline_color = validate_and_get_color(outline_color, "&H00000000", available_colors)
+        shadow_color = validate_and_get_color(shadow_color, "&H00000000", available_colors)
+
         # Time before first verse => split into title and loader durations
         first_word_start = verses_data[0]["words"][0]["start"]
         title_duration   = first_word_start * 0.25

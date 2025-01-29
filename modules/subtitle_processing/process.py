@@ -4,7 +4,6 @@ from typing import Union
 import logging
 
 # Local Application Imports
-from .config import get_available_colors
 from .utilities import extract_audio_duration
 from ..utilities import load_json
 from .create_ass_file import create_ass_file
@@ -17,13 +16,18 @@ def process_karaoke_subtitles(
     output_path: Union[str, Path],
     override: bool = False,
     file_name: str = "karaoke_subtitles.ass",
-
     font: str = "Arial",
     fontsize: int = 24,
     primary_color: str = "White",
     secondary_color: str = "Yellow",
+    outline_color: str = "Black",
+    outline_size: int = 2,
+    shadow_color: str = "Black",
+    shadow_size: int = 0,
     screen_width: int = 1280, 
-    screen_height: int = 720
+    screen_height: int = 720,
+    verses_before: int = 1,
+    verses_after: int = 1,
 ):
     try:
         logger.info(f"Creating karaoke subtitle file referencing timed lyrics")
@@ -45,7 +49,7 @@ def process_karaoke_subtitles(
         if not lyrics_file.exists():
             logger.error(f"Lyrics file does not exist. Skipping subtitle generation...")
             raise FileNotFoundError(f"Lyrics file '{lyrics_file}' does not exist.")
-        
+
         # Load the artist info
         artist_info = load_json(metadata)
         song_name = artist_info.get("title", "Unknown Title")
@@ -61,10 +65,6 @@ def process_karaoke_subtitles(
 
         if audio_duration is None:
             raise ValueError(f"Could not extract audio duration from {audio_duration}")
-        
-        available_colors = get_available_colors()
-        primary_color_code = available_colors.get(primary_color, "&H00FFFFFF")  # Default to White
-        secondary_color_code = available_colors.get(secondary_color, "&H0000FFFF")  # Default to Yellow
 
         create_ass_file(
             verses_data,
@@ -72,11 +72,17 @@ def process_karaoke_subtitles(
             audio_duration=audio_duration,
             font=font,
             fontsize=fontsize,
-            primary_color=primary_color_code,
-            secondary_color=secondary_color_code,
+            primary_color=primary_color,
+            secondary_color=secondary_color,
+            outline_color=outline_color,
+            outline_size=outline_size,
+            shadow_color=shadow_color,
+            shadow_size=shadow_size,
             title=title,
             screen_width=screen_width,
             screen_height=screen_height,
+            verses_before=verses_before,
+            verses_after=verses_after,
         )
 
         logger.info(f"Karaoke subtitles file created: {output_file}")
