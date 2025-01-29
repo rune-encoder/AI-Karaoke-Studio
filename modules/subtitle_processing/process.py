@@ -4,24 +4,31 @@ from typing import Union
 import logging
 
 # Local Application Imports
-from .config import get_available_colors, get_font_list
+from .config import get_available_colors
 from .utilities import extract_audio_duration
-from ..utilities import load_json, save_json
+from ..utilities import load_json
 from .create_ass_file import create_ass_file
 
 # Initialize Logger
 logger = logging.getLogger(__name__)
 
-# ! REVISIT FILE ===============================================================
-# ! REVISIT FILE ===============================================================
-# ! REVISIT FILE ===============================================================
 
 def process_karaoke_subtitles(
     output_path: Union[str, Path],
     override: bool = False,
-    file_name: str = "karaoke_subtitles.ass"
+    file_name: str = "karaoke_subtitles.ass",
+
+    font: str = "Arial",
+    fontsize: int = 24,
+    primary_color: str = "White",
+    secondary_color: str = "Yellow",
+    screen_width: int = 1280, 
+    screen_height: int = 720
 ):
     try:
+        logger.info(f"Creating karaoke subtitle file referencing timed lyrics")
+
+        metadata = Path(output_path) / "metadata.json"
         modified_lyrics_file = Path(output_path) / "modified_lyrics.json"
         raw_lyrics_file = Path(output_path) / "raw_lyrics.json"
         audio_file = Path(output_path) / "karaoke_audio.mp3"
@@ -29,49 +36,51 @@ def process_karaoke_subtitles(
 
         # Check if the output file already exists and skip if override is not set
         if output_file.exists() and not override:
-            logger.info(
-                "Skipping subtitle generation... Karaoke subtitles file already exists in the output directory."
-            )
+            logger.info("Skipping subtitle generation... Karaoke subtitles file already exists in the output directory.")
             return
-        
+
+        # Use `modified_lyrics.json`. If it does not exist use `raw_lyrics.json`
         lyrics_file = modified_lyrics_file if Path(modified_lyrics_file).exists() else Path(raw_lyrics_file)
 
         if not lyrics_file.exists():
             logger.error(f"Lyrics file does not exist. Skipping subtitle generation...")
-            return
+            raise FileNotFoundError(f"Lyrics file '{lyrics_file}' does not exist.")
         
+        # Load the artist info
+        artist_info = load_json(metadata)
+        song_name = artist_info.get("title", "Unknown Title")
+        artist_name = artist_info.get("artists", ["Unknown Artist"])[0]
+        title = f"{artist_name}\n~ {song_name} ~\nKaraoke"
+        title = title.replace("\n", r"\N")
+
         # Load the lyrics
-        lyrics = load_json(lyrics_file)
+        verses_data = load_json(lyrics_file)
 
         # Extract audio duration (assuming you have an input file for the instrumental audio)
         audio_duration = extract_audio_duration(audio_file)
 
         if audio_duration is None:
             raise ValueError(f"Could not extract audio duration from {audio_duration}")
-
-        # for verse in lyrics:
-        #     if verse['start'] is None or verse['end'] is None:
-        #         logger.error(f"Verse {verse['verse_number']} has invalid start or end times. Skipping this verse...")
-        #         continue
-        #     for word in verse['words']:
-        #         if word['start'] is None or word['end'] is None:
-        #             logger.error(f"Word {word['word_number']} in verse {verse['verse_number']} has invalid start or end times. Skipping this word...")
-        #             continue
-
+        
+        available_colors = get_available_colors()
+        primary_color_code = available_colors.get(primary_color, "&H00FFFFFF")  # Default to White
+        secondary_color_code = available_colors.get(secondary_color, "&H0000FFFF")  # Default to Yellow
 
         create_ass_file(
-            lyrics,
+            verses_data,
             output_path=output_file,
             audio_duration=audio_duration,
-            font="Arial",  # Example font
-            fontsize=24,  # Example font size
-            title="Karaoke",  # Example title
-            primary_color="White",
-            secondary_color="Yellow"
+            font=font,
+            fontsize=fontsize,
+            primary_color=primary_color_code,
+            secondary_color=secondary_color_code,
+            title=title,
+            screen_width=screen_width,
+            screen_height=screen_height,
         )
+
         logger.info(f"Karaoke subtitles file created: {output_file}")
 
     except Exception as e:
         logger.error(f"An error occurred during subtitle generation: {e}")
         raise
-

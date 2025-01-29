@@ -2,53 +2,49 @@
 import gradio as gr
 
 # Local Application Imports
-from interface.callbacks import (
+from .callbacks import (
     process_audio_callback,
-    refresh_raw_lyrics_callback,
-    fetch_official_lyrics_callback,
+    fetch_reference_lyrics_callback,
     save_fetched_lyrics_callback,
     modify_lyrics_callback,
+    generate_subtitles_and_video_callback,
 )
 
-from interface.helpers import (
-    display_lyrics_format,
-    load_json_file,
-    save_json_file,
-
+from .helpers import (
+    check_modify_ai_availability,
+    check_generate_karaoke_availability,
 )
 
+from modules import (
+    get_available_colors,
+    get_font_list,
+)
 
-def process_placeholder_callback(
-    raw_lyrics_box_text,
-    fetched_lyrics_box_text
-):
-    """
-    A placeholder function for the 'Process' button. 
-    Just returns a message or some combined text for now.
-    """
-    msg = (
-        "Placeholder process button.\n\n"
-        "Left side:\n" + str(raw_lyrics_box_text) + "\n\n"
-        "Right side:\n" + str(fetched_lyrics_box_text)
-    )
-    return msg
-
+import pandas as pd
 
 # Main App Interface
 def main_app(cache_dir, output_dir):
     with gr.Blocks() as app:
 
-        gr.Markdown("# 🎤 Karaoke Generator")
+        # Get available fonts and colors for subtitles
+        available_fonts = get_font_list()
+        available_colors = get_available_colors()
 
-        # States
+        # ══════════════════════════════════════════════════════════════════════
+        # -------------- State Management for the Application -------------------
+        # ══════════════════════════════════════════════════════════════════════
         state_working_dir = gr.State(value="")
         state_lyrics_json = gr.State(value=None)
         state_lyrics_display = gr.State(value="")
         state_fetched_lyrics_json = gr.State(value=None)
         state_fetched_lyrics_display = gr.State(value="")
 
-        # ---------------------------- SECTION 1 ----------------------------
-        gr.Markdown("# _________________________________________________________")
+        gr.Markdown("# 🎤 Karaoke Generator")
+
+        # ══════════════════════════════════════════════════════════════════════
+        # -------------- Process Audio & and Transcribe Vocals -----------------
+        # ══════════════════════════════════════════════════════════════════════
+        gr.Markdown("# _____")
         with gr.Row():
             with gr.Column():
                 audio_input = gr.File(
@@ -57,10 +53,12 @@ def main_app(cache_dir, output_dir):
                     type="filepath"
                 )
 
-                with gr.Accordion("Advanced Options", open=False):
-                    override_checkbox = gr.Checkbox(
-                        label="Override?",
+                # --- ADVANCED AUDIO SETTINGS ---
+                with gr.Accordion("Advanced Audio Processing Settings", open=False):
+                    force_audio_processing = gr.Checkbox(
+                        label="Re-run Audio Processing?",
                         value=False,
+                        info="Forces re-running the entire audio pipeline (stem separation, transcription, etc.)."
                     )
 
                 process_audio_button = gr.Button(
@@ -68,52 +66,152 @@ def main_app(cache_dir, output_dir):
                     variant="primary"
                 )
 
-        # ---------------------------- SECTION 2 ----------------------------
-        gr.Markdown("# _________________________________________________________")
+        # ══════════════════════════════════════════════════════════════════════
+        # ----------------- Fetch & Modify Reference Lyrics --------------------
+        # ══════════════════════════════════════════════════════════════════════
+        gr.Markdown("# _____")
         with gr.Row():
-            with gr.Column():
-                raw_lyrics_box = gr.Textbox(
-                    label="Processed Lyrics (Used for Karaoke)",
-                    lines=20,
-                    interactive=False,  # user sees but does not edit
-                )
-                with gr.Row():
-                    refresh_button = gr.Button("🔄 Refresh Lyrics",)
-                    modify_button = gr.Button("🪄 Modify with AI",)
-
             with gr.Column():
                 fetched_lyrics_box = gr.Textbox(
                     label="Reference Lyrics (Editable)",
                     lines=20,
-                    interactive=True,   # user can edit official lyrics
+                    interactive=True,
                 )
                 with gr.Row():
                     fetch_button = gr.Button("🌐 Fetch Reference Lyrics")
                     save_button = gr.Button("💾 Update Reference Lyrics")
 
+            with gr.Column():
+                raw_lyrics_box = gr.Dataframe(
+                    value = pd.DataFrame({
+                        "Processed Lyrics (Used for Karaoke)": ["" for _ in range(12)]
+                    }),
+                    headers=["Processed Lyrics (Used for Karaoke)"],
+                    label="Processed Lyrics (Used for Karaoke)",
+                    datatype=["str"],
+                    interactive=False,
+                    show_label=False,
+                    max_height=465,
+                )
+                with gr.Row():
+                    modify_button = gr.Button(
+                        "🪄 Modify with AI",
+                        variant="primary",
+                        interactive=False
+                    )
+
         with gr.Row():
-            with gr.Accordion("Advanced Options", open=False):
-                # ! REVISIT AND CHANGE
-                override_checkbox = gr.Checkbox(
-                    label="Override?",
+            # --- ADVANCED LYRICS SETTINGS ---
+            with gr.Accordion("Advanced Lyrics Settings", open=False):
+                force_refetch_lyrics = gr.Checkbox(
+                    label="Re-Fetch Reference Lyrics?",
                     value=False,
+                    info="Ignores the local `reference_lyrics.json` and fetches new lyrics from the API."
+                )
+                force_ai_modification = gr.Checkbox(
+                    label="Re-run AI Lyric Modification?",
+                    value=False,
+                    info="Ignores previously AI generated `modified_lyrics.json` and re-aligns the lyrics with AI."
                 )
 
-        # ---------------------------- SECTION 3 ----------------------------
-        gr.Markdown("# _________________________________________________________")
+        # ══════════════════════════════════════════════════════════════════════
+        # ----------------- Generate Karaoke Subtitles & Video -----------------
+        # ══════════════════════════════════════════════════════════════════════
+        gr.Markdown("# _____")
+        gr.Markdown("## Generate Karaoke Subtitles & Video")
+
         with gr.Row():
-            process2_button = gr.Button(
-                "Process (Placeholder)",
-                variant="primary",
+            # --- Subtitles basic options ---
+            font_input = gr.Dropdown(
+                choices=available_fonts, 
+                value="Maiandra GD", 
+                label="Font"
+            )
+            primary_color_input = gr.Dropdown(
+                choices=available_colors, 
+                value="White", 
+                label="Font Color"
+            )
+            secondary_color_input = gr.Dropdown(
+                choices=available_colors, 
+                value="Yellow", 
+                label="Font Highlight Color"
+            )
+        with gr.Row():
+            fontsize_input = gr.Slider(
+                minimum=12, 
+                maximum=84, 
+                step=1, 
+                value=38, 
+                label="Font Size"
             )
 
-        process_output = gr.Textbox(
-            label="Process Output",
-            lines=6,
+        # --- ADVANCED VIDEO SETTINGS ---
+        with gr.Accordion("Advanced Video Settings", open=False):
+            gr.Markdown(
+                "These options let you tweak video encoding quality, resolution, bitrate, etc.  "
+                "Defaults are recommended for most users."
+            )
+            with gr.Row():
+                force_subtitles_overwrite = gr.Checkbox(
+                    label="Re-Generate Karaoke Subtitles?",
+                    value=True,
+                    info="If `karaoke_subtitles.ass` already exists, overwrite it with a newly generated file."
+                )
+            with gr.Row():
+                with gr.Column():
+                    resolution_input = gr.Dropdown(
+                        choices=["640x480", "1280x720", "1920x1080"],
+                        value="1280x720",
+                        label="Resolution"
+                    )
+                    preset_input = gr.Dropdown(
+                        choices=["ultrafast", "fast", "medium", "slow"],
+                        value="fast",
+                        label="FFmpeg Preset"
+                    )
+                with gr.Column():
+                    crf_input = gr.Slider(
+                        minimum=0, 
+                        maximum=51, 
+                        step=1, 
+                        value=23, 
+                        label="CRF (Video Quality)"
+                    )
+                    fps_input = gr.Slider(
+                        minimum=15, 
+                        maximum=60, 
+                        step=1, 
+                        value=24, 
+                        label="Frames per Second"
+                    )
+                with gr.Column():
+                    bitrate_input = gr.Dropdown(
+                        label="Video Bitrate",
+                        choices=["1000k", "2000k", "3000k", "4000k", "5000k", "Auto"],
+                        value="3000k", 
+                        interactive=True
+                    )
+                    audio_bitrate_input = gr.Dropdown(
+                        label="Audio Bitrate",
+                        choices=["64k", "128k", "192k", "256k", "320k", "Auto"],
+                        value="192k", 
+                        interactive=True
+                    )
+
+        generate_karaoke_button = gr.Button(
+            "Generate Karaoke", 
+            variant="primary",
             interactive=False
         )
 
+        # We can display the final video in a gr.Video component
+        karaoke_video_output = gr.Video(label="Karaoke Video", interactive=False)
+        # karaoke_status_output = gr.Textbox(label="Karaoke Generation Status")
+
+        # ══════════════════════════════════════════════════════════════════════
         # ----------------------- Wire up the callbacks -----------------------
+        # ══════════════════════════════════════════════════════════════════════
 
         # (Primary) Process Audio Button
         # Updates States: working directory, lyrics data, and lyrics to display
@@ -123,11 +221,13 @@ def main_app(cache_dir, output_dir):
             fn=process_audio_callback,
             inputs=[
                 audio_input,
-                override_checkbox,
+                force_audio_processing,
                 state_working_dir,
                 state_lyrics_json,
                 state_lyrics_display,
-                gr.State(cache_dir), # Hidden state: cache_dir
+                
+                # Hidden state: cache_dir
+                gr.State(cache_dir),  
             ],
             outputs=[
                 state_working_dir,
@@ -139,54 +239,24 @@ def main_app(cache_dir, output_dir):
             fn=lambda disp: disp,
             inputs=state_lyrics_display,
             outputs=raw_lyrics_box
-        )
-
-        # (Secondary) 🔄 Refresh Lyrics Button
-        # Updates States: lyrics, lyrics to display
-        # Displays the updated `state_lyrics_display` in the `lyrics_box`
-        refresh_button.click(
-            fn=refresh_raw_lyrics_callback,
-            inputs=[
-                state_working_dir,
-                state_lyrics_json,
-                state_lyrics_display
-            ],
-            outputs=[
-                state_lyrics_json,
-                state_lyrics_display
-            ]
         ).then(
-            fn=lambda disp: disp,
-            inputs=state_lyrics_display,
-            outputs=raw_lyrics_box
-        )
-
-        # (Secondary) 🪄 Modify with AI Button
-        # Updates States: lyrics, lyrics to display
-        # Displays the updated `state_lyrics_display` in the `lyrics_box`
-        modify_button.click(
-            fn=modify_lyrics_callback,
-            inputs=[
-                state_working_dir,
-                state_lyrics_json,
-                state_lyrics_display
-            ],
-            outputs=[
-                state_lyrics_json,
-                state_lyrics_display
-            ]
+            fn=check_modify_ai_availability,
+            inputs=[state_working_dir],
+            outputs=modify_button
         ).then(
-            fn=lambda disp: disp,
-            inputs=state_lyrics_display,
-            outputs=raw_lyrics_box
+            # After finishing `process_audio_callback`, check if we can enable `Modify with AI` and `Generate Karaoke` buttons
+            fn=check_generate_karaoke_availability,
+            inputs=[state_working_dir],
+            outputs=generate_karaoke_button
         )
 
         # (Secondary) 🌐 Fetch Reference Lyrics Button
         # Updates States: fetched lyrics, fetched lyrics to display
         # Displays the updated `state_fetched_lyrics_display` in the `fetched_lyrics_box`
         fetch_button.click(
-            fn=fetch_official_lyrics_callback,
+            fn=fetch_reference_lyrics_callback,
             inputs=[
+                force_refetch_lyrics,
                 state_working_dir,
                 state_fetched_lyrics_json,
                 state_fetched_lyrics_display
@@ -199,6 +269,11 @@ def main_app(cache_dir, output_dir):
             fn=lambda disp: disp,
             inputs=state_fetched_lyrics_display,
             outputs=fetched_lyrics_box
+        ).then(
+            # After fetching the lyrics, check if we can enable `Modify with AI` button
+            fn=check_modify_ai_availability,
+            inputs=[state_working_dir],
+            outputs=modify_button
         )
 
         # (Secondary) 💾 Update Reference Lyrics Button
@@ -216,13 +291,68 @@ def main_app(cache_dir, output_dir):
                 state_fetched_lyrics_json,
                 state_fetched_lyrics_display
             ]
+        ).then(
+            # After updating the fetched lyrics, check if we can enable `Modify with AI` button
+            fn=check_modify_ai_availability,
+            inputs=[state_working_dir],
+            outputs=modify_button
         )
 
-        # Process (placeholder) -> merges raw + fetched text
-        process2_button.click(
-            fn=process_placeholder_callback,
-            inputs=[raw_lyrics_box, fetched_lyrics_box],
-            outputs=process_output
+        # (Secondary) 🪄 Modify with AI Button
+        # Updates States: lyrics, lyrics to display
+        # Displays the updated `state_lyrics_display` in the `lyrics_box`
+        modify_button.click(
+            fn=modify_lyrics_callback,
+            inputs=[
+                force_ai_modification,
+                state_working_dir,
+                state_lyrics_json,
+                state_lyrics_display
+            ],
+            outputs=[
+                state_lyrics_json,
+                state_lyrics_display
+            ]
+        ).then(
+            fn=lambda disp: disp,
+            inputs=state_lyrics_display,
+            outputs=raw_lyrics_box
+        ).then(
+            # After lyric modification, check if we can enable `Generate Karaoke` button
+            fn=check_generate_karaoke_availability,
+            inputs=[state_working_dir],
+            outputs=generate_karaoke_button
+        )
+
+        # (Primary) Generate Karaoke Button
+        # Generates the subtitles and karaoke video
+        # Displays the generated video in the `karaoke_video_output`
+        generate_karaoke_button.click(
+            fn=generate_subtitles_and_video_callback,
+            inputs=[
+                state_working_dir,
+
+                # Subtitles parameters
+                font_input,
+                fontsize_input,
+                primary_color_input,
+                secondary_color_input,
+
+                # Video parameters
+                resolution_input,
+                preset_input,
+                crf_input,
+                fps_input,
+                bitrate_input,
+                audio_bitrate_input,
+
+                # Additional or override flags
+                force_subtitles_overwrite,
+
+                # Hidden state: output_dir
+                gr.State(output_dir) 
+            ],
+            outputs=[karaoke_video_output]  # or karaoke_status_output, or both
         )
 
     return app

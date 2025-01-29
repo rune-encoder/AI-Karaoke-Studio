@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 def fetch_and_save_lyrics(
     output_path: Union[str, Path],
     override: bool = False,
-    file_name: str = "official_lyrics.json",
+    file_name: str = "reference_lyrics.json",
 ):
     """
     Process the lyric search and save the fetched lyrics to a file.
