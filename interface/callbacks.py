@@ -221,6 +221,81 @@ def save_fetched_lyrics_callback(
         return (state_fetched_lyrics_json, f"Error: {e}")
 
 
+def generate_font_preview_callback(
+    font: str,
+    primary_color: str,
+    secondary_color: str,
+    outline_color: str,
+    outline_size: int,
+    shadow_color: str,
+    shadow_size: int,
+):
+    """
+    Generates the subtitle file and returns a formatted HTML preview of subtitles.
+    """
+    preview_text = "Karaoke Subtitle Font Preview"
+
+    # Words to highlight (make the second half different color)
+    split_index = len(preview_text) // 2
+    highlighted_text = (
+        f'<span style="color: {secondary_color.replace("&H00", "#")};">'
+        f'{preview_text[:split_index]}</span>'
+        f'<span style="color: {primary_color.replace("&H00", "#")};">'
+        f'{preview_text[split_index:]}</span>'
+    )
+
+    # Generate preview HTML
+    preview_html = f"""
+    <div style="
+        font-family: {font};
+        font-size: 24px;  /* Fixed size for compact preview */
+        font-weight: bold;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 10px;
+        background-color: black;
+        text-align: center;
+        color: {primary_color.replace('&H00', '#')};
+        position: relative;
+    ">
+        <p style="
+            position: relative;
+            display: inline-block;
+            color: {primary_color.replace('&H00', '#')};
+            margin: 0;
+            padding: 5px;
+        ">
+            <!-- Sharp Shadow -->
+            <span style="
+                position: absolute;
+                left: {shadow_size}px;
+                top: {shadow_size}px;
+                color: {shadow_color.replace('&H00', '#')};
+                z-index: -1;
+                white-space: nowrap;
+            ">
+                {highlighted_text}
+            </span>
+
+            <!-- Correct Outline using Multi-Layered Shadows -->
+            <span style="
+                color: {primary_color.replace('&H00', '#')};
+                text-shadow: 
+                    -{outline_size}px -{outline_size}px 0 {outline_color.replace('&H00', '#')}, 
+                     {outline_size}px -{outline_size}px 0 {outline_color.replace('&H00', '#')}, 
+                    -{outline_size}px  {outline_size}px 0 {outline_color.replace('&H00', '#')}, 
+                     {outline_size}px  {outline_size}px 0 {outline_color.replace('&H00', '#')};
+            ">
+                {highlighted_text}
+            </span>
+        </p>
+    </div>
+    """
+    
+    return preview_html
+
+
 def generate_subtitles_and_video_callback(
     working_dir: str,
 
@@ -235,7 +310,7 @@ def generate_subtitles_and_video_callback(
     shadow_size: int,
     verses_before: int,
     verses_after: int,
-    
+
     # Video parameters
     resolution: str,
     preset: str,
