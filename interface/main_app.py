@@ -7,6 +7,7 @@ from .callbacks import (
     fetch_reference_lyrics_callback,
     save_fetched_lyrics_callback,
     modify_lyrics_callback,
+    generate_font_preview_callback,
     generate_subtitles_and_video_callback,
 )
 
@@ -23,6 +24,8 @@ from modules import (
 import pandas as pd
 
 # Main App Interface
+
+
 def main_app(cache_dir, output_dir):
     with gr.Blocks() as app:
 
@@ -39,12 +42,33 @@ def main_app(cache_dir, output_dir):
         state_fetched_lyrics_json = gr.State(value=None)
         state_fetched_lyrics_display = gr.State(value="")
 
+        ##############################################################################
+        #                                APP HEADER
+        ##############################################################################
         gr.Markdown("# 🎤 Karaoke Generator")
+        gr.Markdown("""
+        Welcome to the Karaoke Generator!  
+        This interface guides you through:
+        1. **Audio Processing** (stem separation, transcription)  
+        2. **Reference Lyrics Management** (fetch official lyrics, edit them)  
+        3. **AI-based Lyric Modification**  
+        4. **Subtitle & Video Generation** (styling your karaoke video)  
 
-        # ══════════════════════════════════════════════════════════════════════
-        # -------------- Process Audio & and Transcribe Vocals -----------------
-        # ══════════════════════════════════════════════════════════════════════
-        gr.Markdown("# _____")
+        Each step is optional, but typically you want to start with "Process Audio" 
+        and move down. Feel free to expand the **Advanced** sections if you need 
+        more fine-grained control.
+        """)
+
+        ##############################################################################
+        #                    SECTION 1: AUDIO PROCESSING
+        ##############################################################################
+        gr.Markdown("## 1) Audio Processing & Transcription")
+        gr.Markdown("""
+        Upload your audio track (song file). The app will:
+        - Separate the vocals from the instrumental
+        - Transcribe the vocal track using Whisper
+        - Produce a `raw_lyrics.json` for further alignment
+        """)
         with gr.Row():
             with gr.Column():
                 audio_input = gr.File(
@@ -66,10 +90,17 @@ def main_app(cache_dir, output_dir):
                     variant="primary"
                 )
 
-        # ══════════════════════════════════════════════════════════════════════
-        # ----------------- Fetch & Modify Reference Lyrics --------------------
-        # ══════════════════════════════════════════════════════════════════════
-        gr.Markdown("# _____")
+        ##############################################################################
+        #                    SECTION 2: REFERENCE LYRICS
+        ##############################################################################
+        gr.Markdown("## 2) Reference Lyrics (Optional)")
+        gr.Markdown("""
+        This section is for **Official (or desired) Lyrics**.  
+        - The **left side** has editable reference lyrics you can fetch from an API or input yourself.  
+        - The **right side** displays the `raw_lyrics` (from Whisper) or the AI-modified lyrics (once you do the AI step).
+        
+        Editing the reference lyrics can help the AI produce better aligned or corrected lyrics.
+        """)
         with gr.Row():
             with gr.Column():
                 fetched_lyrics_box = gr.Textbox(
@@ -83,7 +114,7 @@ def main_app(cache_dir, output_dir):
 
             with gr.Column():
                 raw_lyrics_box = gr.Dataframe(
-                    value = pd.DataFrame({
+                    value=pd.DataFrame({
                         "Processed Lyrics (Used for Karaoke)": ["" for _ in range(12)]
                     }),
                     headers=["Processed Lyrics (Used for Karaoke)"],
@@ -114,83 +145,103 @@ def main_app(cache_dir, output_dir):
                     info="Ignores previously AI generated `modified_lyrics.json` and re-aligns the lyrics with AI."
                 )
 
-        # ══════════════════════════════════════════════════════════════════════
-        # ----------------- Generate Karaoke Subtitles & Video -----------------
-        # ══════════════════════════════════════════════════════════════════════
-        gr.Markdown("# _____")
-        gr.Markdown("## Generate Karaoke Subtitles & Video")
+        ##############################################################################
+        #                    SECTION 3: SUBTITLES & VIDEO GENERATION
+        ##############################################################################
+        gr.Markdown("## 3) Subtitles & Video Generation")
+        gr.Markdown("""
+        Below, you can adjust how your karaoke subtitles look, including colors, fonts, 
+        outlines, and how many verses appear on screen at once.  
+        Then, choose your video encoding settings to produce the final .mp4 karaoke video.
+        """)
 
         with gr.Row():
             # --- Subtitles basic options ---
             font_input = gr.Dropdown(
-                choices=available_fonts, 
-                value="Maiandra GD", 
+                choices=available_fonts,
+                value="Maiandra GD",
                 label="Font"
             )
             primary_color_input = gr.Dropdown(
-                choices=available_colors, 
-                value="White", 
+                choices=available_colors,
+                value="White",
                 label="Font Color"
             )
             secondary_color_input = gr.Dropdown(
-                choices=available_colors, 
-                value="Yellow", 
+                choices=available_colors,
+                value="Yellow",
                 label="Font Highlight Color"
             )
-        with gr.Row():
-            fontsize_input = gr.Slider(
-                minimum=12, 
-                maximum=84, 
-                step=1, 
-                value=38, 
-                label="Font Size"
-            )
 
         with gr.Row():
-            with gr.Column():
-                outline_color_input = gr.Dropdown(
-                    choices=available_colors, 
-                    value="Black", 
-                    label="Outline Color"
-                )
-                outline_size_input = gr.Slider(
-                    minimum=0, 
-                    maximum=7, 
-                    step=1, 
-                    value=2, 
-                    label="Outline Size"
+            subtitle_preview_output = gr.HTML(label="Subtitle Preview",)
+
+        with gr.Accordion("Advanced Subtitle Settings", open=False):
+            gr.Markdown("""
+            Fine-tune the subtitle appearance.  
+            - **Outline**: The thickness & color of the text border  
+            - **Shadow**: Adds a drop shadow behind the text  
+            - **Verses**: How many verses to show before/after the current one.
+            """)
+            with gr.Row():
+                fontsize_input = gr.Slider(
+                    minimum=12,
+                    maximum=84,
+                    step=1,
+                    value=38,
+                    label="Font Size",
                 )
 
-            with gr.Column():
-                shadow_color_input = gr.Dropdown(
-                    choices=available_colors, 
-                    value="Black", 
-                    label="Shadow Color"
-                )
-                shadow_size_input = gr.Slider(
-                    minimum=0, 
-                    maximum=7, 
-                    step=1, 
-                    value=0, 
-                    label="Shadow Size"
-                )
+            with gr.Row():
+                with gr.Column():
+                    outline_color_input = gr.Dropdown(
+                        choices=available_colors,
+                        value="Black",
+                        label="Outline Color"
+                    )
+                    outline_size_input = gr.Slider(
+                        minimum=0,
+                        maximum=7,
+                        step=1,
+                        value=1,
+                        label="Outline Size",
+                    )
 
-            with gr.Column():
-                verses_before_input = gr.Slider(
-                    minimum=1, 
-                    maximum=3, 
-                    step=1, 
-                    value=2, 
-                    label="Verses Before"
-                )
-                verses_after_input = gr.Slider(
-                    minimum=1, 
-                    maximum=3, 
-                    step=1, 
-                    value=2, 
-                    label="Verses After"
-                )
+                with gr.Column():
+                    shadow_color_input = gr.Dropdown(
+                        choices=available_colors,
+                        value="Black",
+                        label="Shadow Color"
+                    )
+                    shadow_size_input = gr.Slider(
+                        minimum=0,
+                        maximum=7,
+                        step=1,
+                        value=0,
+                        label="Shadow Size",
+                    )
 
+                with gr.Column():
+                    verses_before_input = gr.Slider(
+                        minimum=1,
+                        maximum=3,
+                        step=1,
+                        value=2,
+                        label="Verses Before",
+                    )
+                    verses_after_input = gr.Slider(
+                        minimum=1,
+                        maximum=3,
+                        step=1,
+                        value=2,
+                        label="Verses After",
+                    )
+            with gr.Row():
+                force_subtitles_overwrite = gr.Checkbox(
+                    label="Re-Generate Karaoke Subtitles?",
+                    value=True,
+                    info="If `karaoke_subtitles.ass` already exists, overwrite it with a newly generated file."
+                )
 
         # --- ADVANCED VIDEO SETTINGS ---
         with gr.Accordion("Advanced Video Settings", open=False):
@@ -198,12 +249,6 @@ def main_app(cache_dir, output_dir):
                 "These options let you tweak video encoding quality, resolution, bitrate, etc.  "
                 "Defaults are recommended for most users."
             )
-            with gr.Row():
-                force_subtitles_overwrite = gr.Checkbox(
-                    label="Re-Generate Karaoke Subtitles?",
-                    value=True,
-                    info="If `karaoke_subtitles.ass` already exists, overwrite it with a newly generated file."
-                )
             with gr.Row():
                 with gr.Column():
                     resolution_input = gr.Dropdown(
@@ -218,46 +263,66 @@ def main_app(cache_dir, output_dir):
                     )
                 with gr.Column():
                     crf_input = gr.Slider(
-                        minimum=0, 
-                        maximum=51, 
-                        step=1, 
-                        value=23, 
+                        minimum=0,
+                        maximum=51,
+                        step=1,
+                        value=23,
                         label="CRF (Video Quality)"
                     )
                     fps_input = gr.Slider(
-                        minimum=15, 
-                        maximum=60, 
-                        step=1, 
-                        value=24, 
+                        minimum=15,
+                        maximum=60,
+                        step=1,
+                        value=24,
                         label="Frames per Second"
                     )
                 with gr.Column():
                     bitrate_input = gr.Dropdown(
                         label="Video Bitrate",
                         choices=["1000k", "2000k", "3000k", "4000k", "5000k", "Auto"],
-                        value="3000k", 
+                        value="3000k",
                         interactive=True
                     )
                     audio_bitrate_input = gr.Dropdown(
                         label="Audio Bitrate",
                         choices=["64k", "128k", "192k", "256k", "320k", "Auto"],
-                        value="192k", 
+                        value="192k",
                         interactive=True
                     )
 
         generate_karaoke_button = gr.Button(
-            "Generate Karaoke", 
+            "Generate Karaoke",
             variant="primary",
             interactive=False
         )
 
         # We can display the final video in a gr.Video component
-        karaoke_video_output = gr.Video(label="Karaoke Video", interactive=False)
+        karaoke_video_output = gr.Video(
+            label="Karaoke Video", interactive=False)
         # karaoke_status_output = gr.Textbox(label="Karaoke Generation Status")
 
-        # ══════════════════════════════════════════════════════════════════════
-        # ----------------------- Wire up the callbacks -----------------------
-        # ══════════════════════════════════════════════════════════════════════
+        ##############################################################################
+        #             SUBTITLE STYLE PREVIEW (live updates on color/font changes)
+        ##############################################################################
+        def update_subtitle_preview(*args):
+            return generate_font_preview_callback(*args)
+
+        font_preview_inputs = [
+            font_input,
+            primary_color_input,
+            secondary_color_input,
+            outline_color_input,
+            outline_size_input,
+            shadow_color_input,
+            shadow_size_input,
+        ]
+
+        for component in font_preview_inputs:
+            component.change(fn=update_subtitle_preview, inputs=font_preview_inputs, outputs=subtitle_preview_output)
+
+        ##############################################################################
+        #             CALLBACK WIRING FOR AUDIO, LYRICS, VIDEO
+        ##############################################################################
 
         # (Primary) Process Audio Button
         # Updates States: working directory, lyrics data, and lyrics to display
@@ -271,9 +336,9 @@ def main_app(cache_dir, output_dir):
                 state_working_dir,
                 state_lyrics_json,
                 state_lyrics_display,
-                
+
                 # Hidden state: cache_dir
-                gr.State(cache_dir),  
+                gr.State(cache_dir),
             ],
             outputs=[
                 state_working_dir,
@@ -402,7 +467,7 @@ def main_app(cache_dir, output_dir):
                 force_subtitles_overwrite,
 
                 # Hidden state: output_dir
-                gr.State(output_dir) 
+                gr.State(output_dir)
             ],
             outputs=[karaoke_video_output]  # or karaoke_status_output, or both
         )
