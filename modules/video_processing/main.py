@@ -61,18 +61,18 @@ def generate_karaoke_video(
     # Check GPU
     if torch.cuda.is_available():
         device_name = torch.cuda.get_device_name(0)
-        logger.info(f"✅ GPU detected: {device_name}")
+        logger.info(f"[OK] GPU detected: {device_name}")
         video_codec = "h264_nvenc"
         # If you want CRF-like control, consider removing -crf and using:
         #   command.extend(["-rc:v", "vbr_hq", "-cq:v", str(crf)])  # if crf is integer
     else:
-        logger.warning("⚠️ No GPU detected. Falling back to CPU (libx264).")
+        logger.warning("[BAD] No GPU detected. Falling back to CPU (libx264).")
         video_codec = "libx264"
 
     # Get audio duration
     audio_duration = extract_audio_duration(audio_path)
     if audio_duration is None:
-        logger.error("❌ Unable to retrieve audio duration. Aborting.")
+        logger.error("[BAD] Unable to retrieve audio duration. Aborting.")
         return
 
     # Preprocess background image if provided
@@ -126,8 +126,8 @@ def generate_karaoke_video(
 
     try:
         subprocess.run(command, check=True)
-        logger.info(f"✅ Video successfully created at: {output_path}")
+        logger.info(f"[OK] Video successfully created at: {output_path}")
     except subprocess.CalledProcessError as e:
-        logger.error(f"❌ FFmpeg error: {e}")
+        logger.error(f"[BAD] FFmpeg error: {e}")
     except Exception as e:
-        logger.error(f"❌ An unexpected error occurred: {e}")
+        logger.error(f"[BAD] An unexpected error occurred: {e}")
