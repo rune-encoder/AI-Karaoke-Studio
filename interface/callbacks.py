@@ -229,7 +229,13 @@ def generate_subtitles_and_video_callback(
     fontsize: int,
     primary_color: str,
     secondary_color: str,
-
+    outline_color: str,
+    outline_size: int,
+    shadow_color: str,
+    shadow_size: int,
+    verses_before: int,
+    verses_after: int,
+    
     # Video parameters
     resolution: str,
     preset: str,
@@ -265,8 +271,14 @@ def generate_subtitles_and_video_callback(
             fontsize=fontsize,
             primary_color=primary_color,
             secondary_color=secondary_color,
+            outline_color=outline_color,
+            outline_size=outline_size,
+            shadow_color=shadow_color,
+            shadow_size=shadow_size,
             screen_width=screen_width,
             screen_height=screen_height,
+            verses_before=verses_before,
+            verses_after=verses_after,
         )
 
         # ------------- Video -------------

@@ -146,6 +146,52 @@ def main_app(cache_dir, output_dir):
                 label="Font Size"
             )
 
+        with gr.Row():
+            with gr.Column():
+                outline_color_input = gr.Dropdown(
+                    choices=available_colors, 
+                    value="Black", 
+                    label="Outline Color"
+                )
+                outline_size_input = gr.Slider(
+                    minimum=0, 
+                    maximum=7, 
+                    step=1, 
+                    value=2, 
+                    label="Outline Size"
+                )
+
+            with gr.Column():
+                shadow_color_input = gr.Dropdown(
+                    choices=available_colors, 
+                    value="Black", 
+                    label="Shadow Color"
+                )
+                shadow_size_input = gr.Slider(
+                    minimum=0, 
+                    maximum=7, 
+                    step=1, 
+                    value=0, 
+                    label="Shadow Size"
+                )
+
+            with gr.Column():
+                verses_before_input = gr.Slider(
+                    minimum=1, 
+                    maximum=3, 
+                    step=1, 
+                    value=2, 
+                    label="Verses Before"
+                )
+                verses_after_input = gr.Slider(
+                    minimum=1, 
+                    maximum=3, 
+                    step=1, 
+                    value=2, 
+                    label="Verses After"
+                )
+
+
         # --- ADVANCED VIDEO SETTINGS ---
         with gr.Accordion("Advanced Video Settings", open=False):
             gr.Markdown(
@@ -337,6 +383,12 @@ def main_app(cache_dir, output_dir):
                 fontsize_input,
                 primary_color_input,
                 secondary_color_input,
+                outline_color_input,
+                outline_size_input,
+                shadow_color_input,
+                shadow_size_input,
+                verses_before_input,
+                verses_after_input,
 
                 # Video parameters
                 resolution_input,
