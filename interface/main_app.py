@@ -14,6 +14,7 @@ from .callbacks import (
 from .helpers import (
     check_modify_ai_availability,
     check_generate_karaoke_availability,
+    get_effect_video_list,
 )
 
 from modules import (
@@ -24,12 +25,14 @@ from modules import (
 import pandas as pd
 
 # Main App Interface
-def main_app(cache_dir, output_dir):
+def main_app(cache_dir, output_dir, project_root):
     with gr.Blocks(theme='shivi/calm_seafoam') as app:
+        effects_dir = project_root / "effects"
 
         # Get available fonts and colors for subtitles
         available_fonts = get_font_list()
         available_colors = get_available_colors()
+        available_effects = ["None"] + get_effect_video_list(effects_dir)
 
         ##############################################################################
         #                               APP STATES
@@ -163,6 +166,12 @@ def main_app(cache_dir, output_dir):
                 value="Yellow",
                 label="Font Highlight Color"
             )
+            effect_dropdown = gr.Dropdown(
+                label="Background Video Effects",
+                choices=available_effects,
+                value="None",
+            )
+
 
         with gr.Row():
             subtitle_preview_output = gr.HTML(label="Subtitle Preview",)
@@ -442,6 +451,7 @@ def main_app(cache_dir, output_dir):
                 verses_after_input,
 
                 # Video parameters
+                effect_dropdown,
                 resolution_input,
                 preset_input,
                 crf_input,
@@ -452,8 +462,9 @@ def main_app(cache_dir, output_dir):
                 # Additional or override flags
                 force_subtitles_overwrite,
 
-                # Hidden state: output_dir
-                gr.State(output_dir)
+                # Hidden state: output_dir, effects_dir
+                gr.State(output_dir),
+                gr.State(effects_dir)
             ],
             outputs=[karaoke_video_output]  # or karaoke_status_output, or both
         )

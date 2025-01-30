@@ -3,7 +3,6 @@ from typing import List, Union
 from pathlib import Path
 import logging
 import json
-import os
 
 # Third-Party Imports
 import pandas as pd
@@ -45,6 +44,20 @@ def save_json_file(data, file_path: Union[str, Path]):
     except Exception as e:
         logger.error(f"Could not save JSON to {file_path}: {e}")
         raise
+
+
+def get_effect_video_list(effects_dir: Union[str, Path]) -> list:
+    """
+    Scans the 'effects_dir' folder for .mp4 files
+    and returns a list of file names (e.g. ["snow.mp4", "fire.mp4", ...])
+    """
+    effects_dir = Path(effects_dir)
+    if not effects_dir.exists() or not effects_dir.is_dir():
+        return []
+
+    # Gather .mp4
+    video_files = [f.name for f in effects_dir.glob("*.mp4") if f.is_file()]
+    return video_files
 
 
 def display_text_from_lyrics(json_file: Union[str, Path]) -> str:

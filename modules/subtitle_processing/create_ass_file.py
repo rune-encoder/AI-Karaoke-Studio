@@ -180,27 +180,6 @@ def extend_last_event(
         )
 
 
-# ! REVIST =====================================================================
-def write_ending_credit(
-    file,
-    start_time: float,
-    end_time: float,
-    handle_text: str = "ᚱuᚢe Eᚢcᛟdeᚱ"
-):
-    """
-    Writes a small watermark in the bottom-right corner from start_time to end_time.
-    \an9 => bottom-right alignment within the video frame.
-    """
-    # You can tweak the font size (\fs), color (\c), or add shadow/border tags here if you like.
-    # e.g., {\fs20\c&H00FF00&\b1} for bigger green bold text
-    # credit_text = f"{{\\an9\\fs20\\c&H00FFFF&\\shad1}}Karaoke video created by {handle_text}"
-    credit_text = "TEST CREDITS...."
-
-    file.write(
-        f"Dialogue: 0,{format_time(start_time)},{format_time(end_time)},Default,,0,0,0,,{credit_text}\n"
-    )
-
-
 def write_lyrics_events(
     file,
     verses,
@@ -453,20 +432,6 @@ def create_ass_file(
             
             # Extend last event if there's leftover audio
             extend_last_event(file, verses_data, audio_duration)
-
-            # ! REVISIT ========================================================
-            # After extend_last_event(file, verses_data, audio_duration)
-            # decide when the credit should appear
-            last_verse_end = verses_data[-1]["end"]
-            start_credit = last_verse_end
-            end_credit   = audio_duration
-
-            write_ending_credit(
-                file, 
-                start_credit, 
-                end_credit, 
-                handle_text="@ᚱuᚢe Eᚢcᛟdeᚱ"
-            )
 
     except Exception as e:
         raise RuntimeError(f"Failed to create ASS file: {e}") from e
