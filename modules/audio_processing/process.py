@@ -1,7 +1,7 @@
 # Standard Library Imports
 from pathlib import Path
-from typing import Union
 import logging
+import json
 
 # Local Application Imports
 from .main import _fetch_audio_metadata
@@ -43,12 +43,14 @@ def extract_audio_metadata(
     metadata_file = Path(working_dir) / file_name
     if metadata_file.exists() and not override:
         logger.info("Song metadata already exist. Skipping api query and extraction of audio data...")
-        return
+        with open(metadata_file, 'r') as file:
+            metadata = json.load(file)
+        return metadata["title"], metadata["artists"]
 
     try:
         logger.info(f"Extracting audio metadata for input file: {Path(input_file).stem}")
-        _fetch_audio_metadata(input_file, working_dir, file_name)
-        return
+        title, artists = _fetch_audio_metadata(input_file, working_dir, file_name)
+        return title, artists
     
     except Exception as e:
         logger.warning(f"Metadata extraction failed: {e}. Proceeding without metadata.")

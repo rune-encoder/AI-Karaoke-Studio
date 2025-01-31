@@ -38,7 +38,7 @@ def handle_audio_processing(
 
         # Extract Song Metadata
         # Query audio file metadata from AcoustID API (title and artist) and store in a JSON file
-        extract_audio_metadata(input_file, working_dir, override=override_all)
+        title, artists = extract_audio_metadata(input_file, working_dir, override=override_all)
 
         # Perform Audio Stem Separation
         # Extract vocals, other, bass, and drums from the input audio file using Demucs from Facebook AI
@@ -58,7 +58,7 @@ def handle_audio_processing(
             file_name=file_name
         )
 
-        return raw_lyrics_path, working_dir
+        return raw_lyrics_path, working_dir, title, artists
 
     except Exception as e:
         raise RuntimeError(f"Error in audio processing pipeline: {e}")

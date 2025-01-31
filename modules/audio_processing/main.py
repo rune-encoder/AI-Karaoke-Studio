@@ -96,8 +96,8 @@ def _fetch_audio_metadata(
             json.dump(metadata, f, indent=4, ensure_ascii=False)
 
         logger.info(f"Audio metadata saved successfully to {output_file}")
-        return
+        return metadata["title"], metadata["artists"]
 
     except Exception as e:
         logger.error(f"Error processing audio file: {e}", exc_info=True)
-        return
+        return metadata["title"], metadata["artists"]

@@ -28,6 +28,7 @@ def process_karaoke_subtitles(
     screen_height: int = 720,
     verses_before: int = 1,
     verses_after: int = 1,
+    loader_threshold: int = 5.0,
 ):
     try:
         logger.info(f"Creating karaoke subtitle file referencing timed lyrics")
@@ -83,6 +84,7 @@ def process_karaoke_subtitles(
             screen_height=screen_height,
             verses_before=verses_before,
             verses_after=verses_after,
+            loader_threshold=loader_threshold
         )
 
         logger.info(f"Karaoke subtitles file created: {output_file}")
