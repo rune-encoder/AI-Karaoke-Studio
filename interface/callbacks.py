@@ -1,4 +1,5 @@
 # Standard Library Imports
+from typing import Union, Optional
 from pathlib import Path
 import logging
 import json
@@ -312,6 +313,7 @@ def generate_subtitles_and_video_callback(
     verses_after: int,
 
     # Video parameters
+    effects_choice: Optional[Union[str, Path]],
     resolution: str,
     preset: str,
     crf: int,
@@ -321,7 +323,8 @@ def generate_subtitles_and_video_callback(
 
     # Additional or override flags
     override_subs: bool,
-    output_dir: str
+    output_dir: str,
+    effects_dir: str
 ):
     """
     1) Generate Karaoke Subtitles (karaoke_subtitles.ass) 
@@ -356,10 +359,16 @@ def generate_subtitles_and_video_callback(
             verses_after=verses_after,
         )
 
+        if effects_choice == "None":
+            effect_video_path = None
+        else:
+            effect_video_path = Path(effects_dir) / effects_choice
+
         # ------------- Video -------------
         video_output_path = process_karaoke_video(
             working_dir=Path(working_dir),
             output_path=Path(output_dir),
+            effect_path=Path(effect_video_path),
 
             # Video Settings
             resolution=resolution,

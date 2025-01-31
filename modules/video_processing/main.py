@@ -1,133 +1,146 @@
-import torch
-import subprocess
-from pathlib import Path
-from PIL import Image
+# Standard Library Imports
 from typing import Union, Optional
-from .utilities import extract_audio_duration, validate_file
+from pathlib import Path
+import subprocess
 import logging
 
+# Third-Party Imports
+import torch
+
+from .utilities import extract_audio_duration, validate_file
+# Initialize Logger
 logger = logging.getLogger(__name__)
 
-# ! REFERENCE CRF AND IMPROVE FOR CPU AND GPU USAGE
-
-def preprocess_image(image_path, resolution):
-    """
-    Load and resize the given background image to match `resolution`.
-    Returns a temporary file path to the processed PNG.
-    """
-    import tempfile
-    try:
-        with Image.open(image_path) as img:
-            img = img.convert("RGB")
-            width, height = map(int, resolution.split("x"))
-            img = img.resize((width, height))
-
-            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
-                output_path = tmp.name
-            img.save(output_path, "PNG")
-            return output_path
-    except Exception as e:
-        logger.error(f"Error processing image: {e}")
-        return None
 
 def generate_karaoke_video(
     audio_path: Union[str, Path],
     ass_path: Union[str, Path],
     output_path: Union[str, Path],
+    video_effect: Union[str, Path],
     resolution: str = "1280x720",
     preset: str = "fast",
-    crf: Optional[int] = 23,   # CRF might be irrelevant for NVENC
+    crf: Optional[int] = 23,   # CRF may be irrelevant for NVENC
     fps: int = 24,
     bitrate: str = "3000k",
     audio_bitrate: str = "192k",
-    background_image: Optional[Union[str, Path]] = None
 ):
     """
-    Generate a karaoke video with either:
-      - A looped background image
-      - Or a black background (default)
+    Generate a karaoke video by:
+      1) Looping an "effect video" infinitely for the entire duration,
+      2) Scaling/padding the effect video to the desired resolution,
+      3) Overlaying .ass subtitles (karaoke_subtitles.ass),
+      4) Mapping the user-supplied audio track,
+      5) Writing the final video to `output_path`.
 
-    Tries GPU acceleration (NVENC) if available via torch.cuda.
-    Otherwise falls back to libx264 CPU encoding.
+    Args:
+        audio_path (str|Path): Path to the karaoke audio (.mp3 or similar).
+        ass_path (str|Path): Path to the .ass subtitles.
+        output_path (str|Path): Destination for the final MP4.
+        resolution (str): E.g. "1280x720".
+        preset (str): FFmpeg encoding preset (ultrafast, fast, medium, slow, etc.).
+        crf (int|None): Quality setting for CPU-based x264 (GPU often ignores this).
+        fps (int): Frames per second for the output video.
+        bitrate (str): Target video bitrate (e.g. "3000k").
+        audio_bitrate (str): Audio bitrate (e.g. "192k").
+
+    Returns:
+        str|None: Returns the final output path (str) on success, or None on failure.
     """
-    # Validate input files
+    # video_effect = Path(r"C:\Users\chris\ai_karaoke_app\effects\snow.mp4").as_posix()
+
     if not validate_file(audio_path):
         logger.error(f"Invalid audio file: {audio_path}")
-        return
+        return None
     if not validate_file(ass_path):
-        logger.error(f"Invalid subtitle file: {ass_path}")
-        return
+        logger.error(f"Invalid .ass subtitles: {ass_path}")
+        return None
 
-    # Check GPU
+    # Check for GPU vs CPU
     if torch.cuda.is_available():
         device_name = torch.cuda.get_device_name(0)
-        logger.info(f"[OK] GPU detected: {device_name}")
+        logger.info(f"GPU found: {device_name} (NVENC).")
         video_codec = "h264_nvenc"
-        # If you want CRF-like control, consider removing -crf and using:
-        #   command.extend(["-rc:v", "vbr_hq", "-cq:v", str(crf)])  # if crf is integer
+        use_crf = False
     else:
-        logger.warning("[BAD] No GPU detected. Falling back to CPU (libx264).")
+        logger.warning("[WARN] No GPU found, using libx264 (CPU).")
         video_codec = "libx264"
+        use_crf = True
 
     # Get audio duration
-    audio_duration = extract_audio_duration(audio_path)
-    if audio_duration is None:
-        logger.error("[BAD] Unable to retrieve audio duration. Aborting.")
-        return
+    audio_dur = extract_audio_duration(audio_path)
+    if audio_dur is None:
+        logger.error("Cannot detect audio duration, aborting.")
+        return None
 
-    # Preprocess background image if provided
-    if background_image:
-        background_image = preprocess_image(background_image, resolution)
-        if not background_image:
-            return "Error processing background image."
+    ############################################################################
+    # Build the FMPEG command
+    ############################################################################
+    cmd = ["ffmpeg", "-y"]
 
-    # Build FFmpeg command
-    command = ["ffmpeg", "-y"]  # Overwrite output
-
-    if background_image:
-        # 1) Loop the background image
-        command.extend(["-loop", "1", "-i", background_image])
-        # 2) Audio input
-        command.extend(["-i", str(audio_path)])
-        # 3) Filter: scale + subtitles
-        filter_complex = f"[0:v]scale={resolution},subtitles={ass_path}"
-        command.extend(["-filter_complex", filter_complex])
-        # 4) Map streams
-        command.extend(["-map", "0:v", "-map", "1:a"])
+    if video_effect is not None:
+        if not validate_file(video_effect):
+            logger.error(f"Video_effect is invalid: {video_effect}")
+            return None
+        
+        # Input #0 => effect video, loop infinitely (-1)
+        cmd.extend(["-stream_loop", "-1", "-i", str(video_effect)])
     else:
-        # Black background for the duration
-        command.extend(["-f", "lavfi", "-i", f"color=c=black:s={resolution}:d={audio_duration}"])
-        command.extend(["-i", str(audio_path)])
-        # Subtitles directly
-        command.extend(["-vf", f"subtitles={ass_path}"])
+        # Input #0 => black background
+        cmd.extend(["-f", "lavfi", "-i", f"color=c=black:s={resolution}:d={audio_dur}"])
 
-    # Common video/audio settings
-    command.extend([
-        "-pix_fmt", "yuv420p",
-        "-c:v", video_codec,
-        "-preset", preset,
+    # Input #1 => karaoke audio
+    cmd.extend(["-i", str(audio_path)])
+
+    # We'll parse resolution into width/height for scale/pad
+    width, height = resolution.split("x")
+
+    filter_chain = (
+        f"[0:v]"
+        # scale to the desired resolution
+        f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
+        # pad so that if aspect ratio differs, we fill the entire {width}x{height}
+        f"pad=w={width}:h={height}:x='(ow - iw)/2':y='(oh - ih)/2'[bg];"
+        # apply .ass subtitles => [vout]
+        f"[bg]subtitles={ass_path}[vout]"
+    )
+
+    # We'll map final video from [vout], audio from input #1
+    cmd.extend([
+        "-filter_complex", filter_chain,
+        "-map", "[vout]",
+        "-map", "1:a"
     ])
 
-    # CRF might be ignored for NVENC, but let's keep it for CPU
-    if not torch.cuda.is_available() and crf is not None:
-        command.extend(["-crf", str(crf)])
+    # Output encoding settings
+    cmd.extend([
+        "-pix_fmt", "yuv420p",
+        "-c:v", video_codec,
+        "-preset", preset
+    ])
 
-    command.extend([
+    if use_crf and crf is not None:
+        cmd.extend(["-crf", str(crf)])
+
+    cmd.extend([
         "-r", str(fps),
         "-b:v", str(bitrate),
         "-c:a", "aac",
         "-b:a", str(audio_bitrate),
-        "-shortest",      # Stop at the shortest input
-        str(output_path)  # Output file
+        "-shortest",  # stop at the shortest stream (audio vs. effect video)
+        str(output_path)
     ])
 
-    # Debug
-    logger.debug("FFmpeg command: %s", " ".join(command))
+    # Debug: print the ffmpeg command
+    logger.debug("FFmpeg command: %s", " ".join(cmd))
 
+    # Execute FFmpeg
     try:
-        subprocess.run(command, check=True)
-        logger.info(f"[OK] Video successfully created at: {output_path}")
+        subprocess.run(cmd, check=True)
+        logger.info(f"Karaoke video created at: {output_path}")
+        return str(output_path)
     except subprocess.CalledProcessError as e:
-        logger.error(f"[BAD] FFmpeg error: {e}")
+        logger.error(f"FFmpeg error: {e}")
+        return None
     except Exception as e:
-        logger.error(f"[BAD] An unexpected error occurred: {e}")
+        logger.error(f"Unexpected error: {e}")
+        return None

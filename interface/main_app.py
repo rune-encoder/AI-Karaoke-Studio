@@ -14,6 +14,7 @@ from .callbacks import (
 from .helpers import (
     check_modify_ai_availability,
     check_generate_karaoke_availability,
+    get_effect_video_list,
 )
 
 from modules import (
@@ -24,18 +25,18 @@ from modules import (
 import pandas as pd
 
 # Main App Interface
-
-
-def main_app(cache_dir, output_dir):
-    with gr.Blocks() as app:
+def main_app(cache_dir, output_dir, project_root):
+    with gr.Blocks(theme='shivi/calm_seafoam') as app:
+        effects_dir = project_root / "effects"
 
         # Get available fonts and colors for subtitles
         available_fonts = get_font_list()
         available_colors = get_available_colors()
+        available_effects = ["None"] + get_effect_video_list(effects_dir)
 
-        # ══════════════════════════════════════════════════════════════════════
-        # -------------- State Management for the Application -------------------
-        # ══════════════════════════════════════════════════════════════════════
+        ##############################################################################
+        #                               APP STATES
+        ##############################################################################
         state_working_dir = gr.State(value="")
         state_lyrics_json = gr.State(value=None)
         state_lyrics_display = gr.State(value="")
@@ -45,40 +46,26 @@ def main_app(cache_dir, output_dir):
         ##############################################################################
         #                                APP HEADER
         ##############################################################################
+        gr.HTML("<hr>")
         gr.Markdown("# 🎤 Karaoke Generator")
-        gr.Markdown("""
-        Welcome to the Karaoke Generator!  
-        This interface guides you through:
-        1. **Audio Processing** (stem separation, transcription)  
-        2. **Reference Lyrics Management** (fetch official lyrics, edit them)  
-        3. **AI-based Lyric Modification**  
-        4. **Subtitle & Video Generation** (styling your karaoke video)  
-
-        Each step is optional, but typically you want to start with "Process Audio" 
-        and move down. Feel free to expand the **Advanced** sections if you need 
-        more fine-grained control.
-        """)
+        gr.HTML("<hr>")
 
         ##############################################################################
         #                    SECTION 1: AUDIO PROCESSING
         ##############################################################################
-        gr.Markdown("## 1) Audio Processing & Transcription")
-        gr.Markdown("""
-        Upload your audio track (song file). The app will:
-        - Separate the vocals from the instrumental
-        - Transcribe the vocal track using Whisper
-        - Produce a `raw_lyrics.json` for further alignment
-        """)
+        gr.Markdown("## 1) Audio Processing and Vocals Transcription")
+        gr.Markdown("### _Upload an audio file to begin audio processing and vocals transcription._")
         with gr.Row():
             with gr.Column():
-                audio_input = gr.File(
+                audio_input = gr.Audio(
                     label="Upload Audio",
-                    file_types=["audio"],
-                    type="filepath"
+                    # file_types=["audio"],
+                    type="filepath",
+                    sources="upload",
                 )
 
-                # --- ADVANCED AUDIO SETTINGS ---
-                with gr.Accordion("Advanced Audio Processing Settings", open=False):
+                # --- ADVANCED SETTINGS ---
+                with gr.Accordion("Developer Settings", open=False):
                     force_audio_processing = gr.Checkbox(
                         label="Re-run Audio Processing?",
                         value=False,
@@ -89,20 +76,24 @@ def main_app(cache_dir, output_dir):
                     "Process Audio",
                     variant="primary"
                 )
+        gr.HTML("<hr>")
 
         ##############################################################################
-        #                    SECTION 2: REFERENCE LYRICS
+        #                    SECTION 2: LYRIC ADJUSTMENTS
         ##############################################################################
-        gr.Markdown("## 2) Reference Lyrics (Optional)")
-        gr.Markdown("""
-        This section is for **Official (or desired) Lyrics**.  
-        - The **left side** has editable reference lyrics you can fetch from an API or input yourself.  
-        - The **right side** displays the `raw_lyrics` (from Whisper) or the AI-modified lyrics (once you do the AI step).
-        
-        Editing the reference lyrics can help the AI produce better aligned or corrected lyrics.
-        """)
+        gr.Markdown("## 2) Lyric Correction and Re-Alignment.")
+        gr.Markdown("### _Correct the generated and timed vocal transcription using a reliable lyrics source as a reference._")
         with gr.Row():
             with gr.Column():
+                gr.Markdown("##### Lyrics to reference for correction and re-alignment of vocals transcription.")
+                gr.Markdown("""
+                - In this section you can source the reference lyrics from an API or input them yourself.
+                - The refrence lyrics will be used by the AI to correct and re-align the original lyrics.
+                - To fetch the lyrics press the `Fetch Reference Lyrics` button.
+                - If you are unable to fetch, the fetched lyrics are incorrect, or want to use your own lyrics, paste 
+                them into the text-box. Ensure there are no empty lines between verses. Then save by pressing the
+                `Update Reference Lyrics` button.
+                """)
                 fetched_lyrics_box = gr.Textbox(
                     label="Reference Lyrics (Editable)",
                     lines=20,
@@ -113,6 +104,13 @@ def main_app(cache_dir, output_dir):
                     save_button = gr.Button("💾 Update Reference Lyrics")
 
             with gr.Column():
+                gr.Markdown("##### Formatted lyrics used to generate Karaoke Subtitles with word timing.")
+                gr.Markdown("""
+                - This section will display the raw transcription or corrected re-aligned transcription.
+                - To correct and re-align the raw transcription press on the `Modify with AI` button.
+                - Note that before you can select this, you need to have the refence lyrics (on the left) saved.
+                - The system will then send the raw transcription and the reference lyrics to AI for correction and re-alignment.
+                """)
                 raw_lyrics_box = gr.Dataframe(
                     value=pd.DataFrame({
                         "Processed Lyrics (Used for Karaoke)": ["" for _ in range(12)]
@@ -131,9 +129,9 @@ def main_app(cache_dir, output_dir):
                         interactive=False
                     )
 
+        # --- ADVANCED SETTINGS ---
         with gr.Row():
-            # --- ADVANCED LYRICS SETTINGS ---
-            with gr.Accordion("Advanced Lyrics Settings", open=False):
+            with gr.Accordion("Developer Settings", open=False):
                 force_refetch_lyrics = gr.Checkbox(
                     label="Re-Fetch Reference Lyrics?",
                     value=False,
@@ -144,17 +142,13 @@ def main_app(cache_dir, output_dir):
                     value=False,
                     info="Ignores previously AI generated `modified_lyrics.json` and re-aligns the lyrics with AI."
                 )
+        gr.HTML("<hr>")
 
         ##############################################################################
         #                    SECTION 3: SUBTITLES & VIDEO GENERATION
         ##############################################################################
         gr.Markdown("## 3) Subtitles & Video Generation")
-        gr.Markdown("""
-        Below, you can adjust how your karaoke subtitles look, including colors, fonts, 
-        outlines, and how many verses appear on screen at once.  
-        Then, choose your video encoding settings to produce the final .mp4 karaoke video.
-        """)
-
+        gr.Markdown("### _Generate a karaoke vide using your desired custimization styles and settings._")
         with gr.Row():
             # --- Subtitles basic options ---
             font_input = gr.Dropdown(
@@ -172,17 +166,17 @@ def main_app(cache_dir, output_dir):
                 value="Yellow",
                 label="Font Highlight Color"
             )
+            effect_dropdown = gr.Dropdown(
+                label="Background Video Effects",
+                choices=available_effects,
+                value="None",
+            )
+
 
         with gr.Row():
             subtitle_preview_output = gr.HTML(label="Subtitle Preview",)
 
-        with gr.Accordion("Advanced Subtitle Settings", open=False):
-            gr.Markdown("""
-            Fine-tune the subtitle appearance.  
-            - **Outline**: The thickness & color of the text border  
-            - **Shadow**: Adds a drop shadow behind the text  
-            - **Verses**: How many verses to show before/after the current one.
-            """)
+        with gr.Accordion("Subtitle Customization Options", open=False):
             with gr.Row():
                 fontsize_input = gr.Slider(
                     minimum=12,
@@ -236,14 +230,8 @@ def main_app(cache_dir, output_dir):
                         value=2,
                         label="Verses After",
                     )
-            with gr.Row():
-                force_subtitles_overwrite = gr.Checkbox(
-                    label="Re-Generate Karaoke Subtitles?",
-                    value=True,
-                    info="If `karaoke_subtitles.ass` already exists, overwrite it with a newly generated file."
-                )
 
-        # --- ADVANCED VIDEO SETTINGS ---
+        # --- ADVANCED SETTINGS ---
         with gr.Accordion("Advanced Video Settings", open=False):
             gr.Markdown(
                 "These options let you tweak video encoding quality, resolution, bitrate, etc.  "
@@ -290,6 +278,14 @@ def main_app(cache_dir, output_dir):
                         interactive=True
                     )
 
+        with gr.Accordion("Developer Settings", open=False):
+            with gr.Row():
+                force_subtitles_overwrite = gr.Checkbox(
+                    label="Re-Generate Karaoke Subtitles?",
+                    value=True,
+                    info="If `karaoke_subtitles.ass` already exists, overwrite it with a newly generated file."
+                )
+
         generate_karaoke_button = gr.Button(
             "Generate Karaoke",
             variant="primary",
@@ -297,9 +293,8 @@ def main_app(cache_dir, output_dir):
         )
 
         # We can display the final video in a gr.Video component
-        karaoke_video_output = gr.Video(
-            label="Karaoke Video", interactive=False)
-        # karaoke_status_output = gr.Textbox(label="Karaoke Generation Status")
+        karaoke_video_output = gr.Video(label="Karaoke Video", interactive=False)
+        gr.HTML("<hr>")
 
         ##############################################################################
         #             SUBTITLE STYLE PREVIEW (live updates on color/font changes)
@@ -456,6 +451,7 @@ def main_app(cache_dir, output_dir):
                 verses_after_input,
 
                 # Video parameters
+                effect_dropdown,
                 resolution_input,
                 preset_input,
                 crf_input,
@@ -466,8 +462,9 @@ def main_app(cache_dir, output_dir):
                 # Additional or override flags
                 force_subtitles_overwrite,
 
-                # Hidden state: output_dir
-                gr.State(output_dir)
+                # Hidden state: output_dir, effects_dir
+                gr.State(output_dir),
+                gr.State(effects_dir)
             ],
             outputs=[karaoke_video_output]  # or karaoke_status_output, or both
         )
