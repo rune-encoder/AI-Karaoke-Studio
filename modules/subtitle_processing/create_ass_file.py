@@ -271,7 +271,8 @@ def write_lyrics_events(
                     if w2["start"] < word_start:
                         # Fully highlight words before the one we're animating
                         progressive.append(f"{{\\c{highlight_color}}}{w2['word']}{{\\c{primary_color}}}")
-                    elif w2["word"] == word_text:
+                    elif w2 is word:
+                        # Only highlight the exact word we're animating
                         progressive.append(partial_word)
                     else:
                         progressive.append(w2["word"])
@@ -324,10 +325,9 @@ def write_lyrics_events(
                 gap_seg_dur = gap_duration / bar_length
 
                 for seg_i in range(1, bar_length + 1):
-                    filled = f"{{\\c{loader_color}}}|{'█' * seg_i}"
-                    unfilled = f"{{\\c&H00000000}}{'█' * (bar_length - seg_i)}"
-                    trailing = f"{{\\c{loader_color}}}|"
-                    loader_text = filled + unfilled + trailing
+                    filled = f"{{\\c{loader_color}}}{'█' * seg_i}"
+                    unfilled = f"{{\\c&H80000000}}{'█' * (bar_length - seg_i)}"
+                    loader_text = filled + unfilled
 
                     seg_start = curr_verse_end + (seg_i - 1) * gap_seg_dur
                     seg_end   = curr_verse_end + seg_i * gap_seg_dur
@@ -352,6 +352,7 @@ def create_ass_file(
     screen_height: int = 720,
     verses_before: int = 1,
     verses_after: int = 1,
+    loader_threshold: int = 5.0,
 ):
     """
     Generate a complete .ass subtitle file with:
@@ -425,7 +426,7 @@ def create_ass_file(
                 primary_color=primary_color,
                 highlight_color=secondary_color,
                 loader_color=secondary_color,
-                loader_threshold=5.0,    # gap > 5s => show loader
+                loader_threshold=loader_threshold,    # gap > threshold => show loader
                 verses_before=verses_before,
                 verses_after=verses_after
             )

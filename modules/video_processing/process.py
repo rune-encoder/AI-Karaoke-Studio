@@ -1,7 +1,7 @@
 
 # Standard Library Imports
 from pathlib import Path
-from typing import Union
+from typing import Union, Optional
 import logging
 
 # Third-Party Imports
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 def process_karaoke_video(
     working_dir: Union[str, Path],
     output_path: Union[str, Path],
-    effect_path: Union[str, Path],
+    effect_path: Optional[Union[str, Path]],
     resolution: str = "1280x720",
     preset: str = "fast",
     crf: int = 23,
@@ -50,7 +50,7 @@ def process_karaoke_video(
             audio_path=karaoke_audio.as_posix(),
             ass_path=relative_subtitles.as_posix(),
             output_path=relative_output.as_posix(),
-            video_effect=effect_path.as_posix(),
+            video_effect=effect_path.as_posix() if effect_path is not None else None,
             resolution=resolution,
             preset=preset,
             crf=crf,

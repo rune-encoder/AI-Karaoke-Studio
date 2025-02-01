@@ -9,6 +9,7 @@ from .callbacks import (
     modify_lyrics_callback,
     generate_font_preview_callback,
     generate_subtitles_and_video_callback,
+    save_metadata_callback,
 )
 
 from .helpers import (
@@ -42,6 +43,8 @@ def main_app(cache_dir, output_dir, project_root):
         state_lyrics_display = gr.State(value="")
         state_fetched_lyrics_json = gr.State(value=None)
         state_fetched_lyrics_display = gr.State(value="")
+        state_artist_name = gr.State(value="")
+        state_song_name = gr.State(value="")
 
         ##############################################################################
         #                                APP HEADER
@@ -59,7 +62,6 @@ def main_app(cache_dir, output_dir, project_root):
             with gr.Column():
                 audio_input = gr.Audio(
                     label="Upload Audio",
-                    # file_types=["audio"],
                     type="filepath",
                     sources="upload",
                 )
@@ -83,6 +85,20 @@ def main_app(cache_dir, output_dir, project_root):
         ##############################################################################
         gr.Markdown("## 2) Lyric Correction and Re-Alignment.")
         gr.Markdown("### _Correct the generated and timed vocal transcription using a reliable lyrics source as a reference._")
+        with gr.Row():
+            with gr.Column():
+                artist_name_input = gr.Textbox(
+                    label="Artist Name",
+                    lines=1,
+                    interactive=True,
+                )
+            with gr.Column():
+                song_name_input = gr.Textbox(
+                    label="Song Name",
+                    lines=1,
+                    interactive=True,
+                )
+        save_metadata_button = gr.Button("💾 Save Artist and Song Name")
         with gr.Row():
             with gr.Column():
                 gr.Markdown("##### Lyrics to reference for correction and re-alignment of vocals transcription.")
@@ -134,12 +150,12 @@ def main_app(cache_dir, output_dir, project_root):
             with gr.Accordion("Developer Settings", open=False):
                 force_refetch_lyrics = gr.Checkbox(
                     label="Re-Fetch Reference Lyrics?",
-                    value=False,
+                    value=True,
                     info="Ignores the local `reference_lyrics.json` and fetches new lyrics from the API."
                 )
                 force_ai_modification = gr.Checkbox(
                     label="Re-run AI Lyric Modification?",
-                    value=False,
+                    value=True,
                     info="Ignores previously AI generated `modified_lyrics.json` and re-aligns the lyrics with AI."
                 )
         gr.HTML("<hr>")
@@ -182,8 +198,15 @@ def main_app(cache_dir, output_dir, project_root):
                     minimum=12,
                     maximum=84,
                     step=1,
-                    value=38,
+                    value=42,
                     label="Font Size",
+                )
+                loader_threshold_input = gr.Slider(
+                    minimum=5.0,
+                    maximum=15.0,
+                    step=0.5,
+                    value=5.0,
+                    label="Loader Threshold (seconds)"
                 )
 
             with gr.Row():
@@ -338,22 +361,43 @@ def main_app(cache_dir, output_dir, project_root):
             outputs=[
                 state_working_dir,
                 state_lyrics_json,
-                state_lyrics_display
+                state_lyrics_display,
+                state_artist_name,
+                state_song_name,
             ]
         ).then(
             # `.then()` event: After states are updated, display them in display box
-            fn=lambda disp: disp,
-            inputs=state_lyrics_display,
-            outputs=raw_lyrics_box
+            fn=lambda disp, artist, song: (disp, artist, song),
+            inputs=[
+                state_lyrics_display,
+                state_artist_name,
+                state_song_name
+            ],
+            outputs=[
+                raw_lyrics_box,
+                artist_name_input,
+                song_name_input
+            ]
         ).then(
+            # After finishing `process_audio_callback`, check if we can enable `Modify with AI` and `Generate Karaoke` buttons
             fn=check_modify_ai_availability,
             inputs=[state_working_dir],
             outputs=modify_button
         ).then(
-            # After finishing `process_audio_callback`, check if we can enable `Modify with AI` and `Generate Karaoke` buttons
             fn=check_generate_karaoke_availability,
             inputs=[state_working_dir],
             outputs=generate_karaoke_button
+        )
+
+        # (Secondary) 💾 Save Artist and Song Name Button
+        save_metadata_button.click(
+            fn=save_metadata_callback,
+            inputs=[
+                state_working_dir,
+                artist_name_input,
+                song_name_input
+            ],
+            outputs=[]
         )
 
         # (Secondary) 🌐 Fetch Reference Lyrics Button
@@ -449,6 +493,7 @@ def main_app(cache_dir, output_dir, project_root):
                 shadow_size_input,
                 verses_before_input,
                 verses_after_input,
+                loader_threshold_input,
 
                 # Video parameters
                 effect_dropdown,

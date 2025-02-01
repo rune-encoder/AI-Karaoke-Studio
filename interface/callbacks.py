@@ -46,7 +46,7 @@ def process_audio_callback(
 
         # Handler: Audio processing pipeline
         # Returns: Path to raw_lyrics.json, and Path to working directory
-        raw_lyrics_path, working_dir = handle_audio_processing(
+        raw_lyrics_path, working_dir, title, artists = handle_audio_processing(
             audio_file,
             cache_dir,
             override_all=override,
@@ -69,11 +69,15 @@ def process_audio_callback(
         # Update State: lyrics, lyrics to display
         state_lyrics_json = raw_lyrics_json
         state_lyrics_display = display_text
+        state_artist_name = artists[0]
+        state_song_name = title
 
         return (
             state_working_dir,
             state_lyrics_json,
-            state_lyrics_display
+            state_lyrics_display,
+            state_artist_name,
+            state_song_name
         )
 
     except Exception as e:
@@ -221,6 +225,35 @@ def save_fetched_lyrics_callback(
         logger.error(f"Error in save_fetched_lyrics_callback: {e}")
         return (state_fetched_lyrics_json, f"Error: {e}")
 
+def save_metadata_callback(state_working_dir, artist_name, song_name):
+    """
+    Updates the metadata.json with the artist name and song name.
+    """
+    try:
+        # Check if working directory is set
+        if not state_working_dir:
+            logger.error("Error: working dir not set")
+            return
+
+        # Update metadata.json with artist name and song name
+        metadata_path = Path(state_working_dir) / "metadata.json"
+        
+        metadata = load_json_file(metadata_path)
+        if not metadata:
+            logger.error("Error loading metadata.json")
+            return
+
+        metadata["artists"][0] = artist_name
+        metadata["title"] = song_name
+
+        # Save the updated metadata
+        save_json_file(metadata, metadata_path)
+        logger.info(f"Metadata updated with artist: {artist_name}, song: {song_name}")
+        return
+
+    except Exception as e:
+        logger.error(f"Error in save_metadata_callback: {e}")
+        return
 
 def generate_font_preview_callback(
     font: str,
@@ -311,6 +344,7 @@ def generate_subtitles_and_video_callback(
     shadow_size: int,
     verses_before: int,
     verses_after: int,
+    loader_threshold: float,
 
     # Video parameters
     effects_choice: Optional[Union[str, Path]],
@@ -357,6 +391,7 @@ def generate_subtitles_and_video_callback(
             screen_height=screen_height,
             verses_before=verses_before,
             verses_after=verses_after,
+            loader_threshold=loader_threshold,
         )
 
         if effects_choice == "None":
@@ -368,7 +403,7 @@ def generate_subtitles_and_video_callback(
         video_output_path = process_karaoke_video(
             working_dir=Path(working_dir),
             output_path=Path(output_dir),
-            effect_path=Path(effect_video_path),
+            effect_path=effect_video_path,
 
             # Video Settings
             resolution=resolution,
