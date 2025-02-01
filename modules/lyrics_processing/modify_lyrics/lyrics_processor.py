@@ -199,9 +199,9 @@ def _process_lyrics_in_chunks(raw_lyrics, reference_lyrics, chunk_size=50):
     logger.info("Modified lyrics successfully processed in chunks!")
     
     # ! DELETE THIS AFTER TESTING ==========================================
-    import pickle
-    with open('modified_lyrics_pre.pkl', 'wb') as f:
-        pickle.dump(aligned_lyrics, f)
+    # import pickle
+    # with open('modified_lyrics_pre.pkl', 'wb') as f:
+    #     pickle.dump(aligned_lyrics, f)
     # ! ====================================================================
 
     # ! DELETE THIS AFTER TESTING ==============================================
