@@ -37,7 +37,7 @@ def _condense_raw_lyrics(raw_lyrics):
                     'word': word.get('word', '').strip(),
                     'start': round(word.get('start', 0), 2),
                     'end': round(word.get('end', 0), 2),
-                    'probability': round(word.get('probability', 0), 2),
+                    # 'probability': round(word.get('probability', 0), 2),
                 }
 
                 # Add the formatted word to the filtered words list
@@ -142,15 +142,5 @@ def _expand_gemini_lyrics(ai_output):
             "end": verse_end,
             "words": words_details,
         })
-
-    # Step 4: Check for anomalies in short verses
-    # for i in range(1, len(formatted_output)):
-        # current_verse = formatted_output[i]
-        # previous_verse = formatted_output[i - 1]
-
-        # If the start time of the current verse overlaps with the previous one, fix it
-        # if current_verse["start"] < previous_verse["end"]:
-            # Adjust the start time of the current verse to align properly
-            # current_verse["start"] = previous_verse["end"]
 
     return formatted_output

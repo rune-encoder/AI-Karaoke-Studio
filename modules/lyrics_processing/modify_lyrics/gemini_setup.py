@@ -12,7 +12,21 @@ llm = ChatGoogleGenerativeAI(
 )
 
 
-def generate_prompt(raw_lyrics, reference_lyrics, chunk_number, total_chunks, chunk_start_time, chunk_end_time, processed_words, total_words):
+def generate_prompt(
+    raw_lyrics, 
+    reference_lyrics, 
+    chunk_number, 
+    total_chunks, 
+    chunk_start_time, 
+    chunk_end_time, 
+    processed_words, 
+    total_words,
+    previous_chunk_last_word,
+    previous_chunk_last_verse,
+    previous_chunk_end_time,
+    correction_log,
+    expected_next_word
+):
     PROMPT = f"""
 {PREFIX}
 
@@ -21,12 +35,22 @@ BATCH INFORMATION STATUS:
 You are currently processing **chunk {chunk_number} of {total_chunks} total chunks**. 
 Processed Words: {processed_words} / {total_words}
 
-Your task is to align the raw transcribed lyrics in this chunk with the corrected lyrics, ensuring that the output aligns as closely as possible with the corrected lyrics while adhering to the provided constraints
+## PREVIOUS CHUNK CONTEXT:
+- **Last word of previous chunk:** "{previous_chunk_last_word}"
+- **Verse number of last word:** {previous_chunk_last_verse}
+- **End time of last word in previous chunk:** {previous_chunk_end_time}s
 
-CHUNK TIMING BOUNDARIES:
-===================
-Start Time: {chunk_start_time}
-End Time: {chunk_end_time}
+## CHUNK TIMING BOUNDARIES:
+- **Start Time:** {chunk_start_time}
+- **End Time:** {chunk_end_time}
+- The first word of this chunk must have a **start time greater than or equal to** the last word of the previous chunk.
+
+## EXPECTED NEXT WORD:
+- The next expected word in the reference lyrics after this chunk is **"{expected_next_word}"**.
+
+## CORRECTION LOG (PREVIOUS CHUNKS):
+- The following words have already been corrected in earlier chunks **(showing last 10 corrections only for relevance):**
+{correction_log[-10:]}
 
 RAW LYRICS:
 ===================
@@ -44,13 +68,24 @@ EDGE CASES:
 ===================
 {EDGE_CASES}
 
+
 INSTRUCTIONS:
 ===================
-1. Do not backtrack or reuse previous timings for subsequent words. Timing must always progress forward.
-2. Ensure each word's start time is greater than or equal to the end time of the previous word.
-3. If a word's timing is inconsistent or overlaps, adjust it to fit the timeline without breaking the sequence.
+1. **Do not modify or adjust start or end times under any circumstances.**
+2. **Ensure each word's start time remains exactly as it is.**
+3. **Every word must retain its original timing regardless of corrections.**
+4. **Use the correction log to maintain consistent spelling and formatting across all chunks.**
+5. **Ensure smooth transitions between chunks by respecting the last word, verse, and expected next word.**
 
 {PARSER.get_format_instructions()}
 """
-
     return PROMPT
+
+
+# Your task is to align the raw transcribed lyrics in this chunk with the corrected lyrics, ensuring that the output aligns as closely as possible with the corrected lyrics while adhering to the provided constraints
+
+# INSTRUCTIONS:
+# ===================
+# 1. Do not backtrack or reuse previous timings for subsequent words. Timing must always progress forward.
+# 2. Ensure each word's start time is greater than or equal to the end time of the previous word.
+# 3. If a word's timing is inconsistent or overlaps, adjust it to fit the timeline without breaking the sequence.
