@@ -14,6 +14,13 @@ logger = logging.getLogger(__name__)
 def transcribe_audio_lyrics(
     working_dir: Union[str, Path],
     override: bool = False,
+    beam_size_input: int = 15,
+    best_of_input: int = 5,
+    patience_input: float = 3.0,
+    condition_toggle: bool = False,
+    compression_threshold_input: float = 1.3,
+    temperature_input: float = 0.0,
+    language_option: str = "Auto Detect",
     file_name: str = "raw_lyrics.json"
 ):
     # Check if the lyrics file already exists in the output directory and
@@ -32,7 +39,16 @@ def transcribe_audio_lyrics(
     try:
         logger.info("Transcribing raw lyrics from the vocals audio using Whisper model...")
         # Extract lyrics metadata from the vocals stem
-        lyrics_metadata = _extract_lyrics_with_timing(input_vocals)
+        lyrics_metadata = _extract_lyrics_with_timing(
+            input_vocals,
+            beam_size_input,
+            best_of_input,
+            patience_input,
+            condition_toggle,
+            compression_threshold_input,
+            temperature_input,
+            language_option
+        )
 
         # Save lyrics raw metadata to a JSON file
         with open(output_file, "w") as f:

@@ -7,6 +7,7 @@ import json
 # Third-Party Imports
 import pandas as pd
 import gradio as gr
+from deep_translator import GoogleTranslator
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -58,6 +59,19 @@ def get_effect_video_list(effects_dir: Union[str, Path]) -> list:
     # Gather .mp4
     video_files = [f.name for f in effects_dir.glob("*.mp4") if f.is_file()]
     return video_files
+
+
+def get_available_languages():
+    """
+    Retrieve available language codes and names for translation.
+    
+    Returns:
+        dict: Dictionary of language names and codes.
+    """ 
+    # Get languages as a dictionary from GoogleTranslator
+    g_translator = GoogleTranslator()
+    
+    return g_translator.get_supported_languages(as_dict=True)
 
 
 def display_text_from_lyrics(json_file: Union[str, Path]) -> str:
