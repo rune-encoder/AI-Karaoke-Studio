@@ -97,7 +97,7 @@ class WordAlignment(BaseModel):
         description="The verse number in the lyrics. Do not modify. Must remain `None`."
     )
 
-# Define a schema for a list of WordAlignment object
+# Define a schema for a list of WordAlignment objectss
 class WordAlignmentList(RootModel):
     root: List[WordAlignment]
 
