@@ -46,13 +46,13 @@ def _extract_lyrics_with_timing(
     segments, info = MODEL.transcribe(
         audio_path,
         word_timestamps=True,              # Extract word-level timestamps
-        # beam_size=int(beam_size_input),    # Increase beam search for better word accuracy
-        # best_of=int(best_of_input),        # Pick the best transcription from multiple runs
-        # patience=patience_input,           # Allow more time before closing segments
-        # condition_on_previous_text=condition_toggle,             # Ensure no contextual bias from previous words
-        # compression_ratio_threshold=compression_threshold_input, # Force Whisper to retain more words
-        # temperature=temperature_input,       # Eliminate randomness in transcription
-        # language=lang                       # Language code for transcription
+        beam_size=int(beam_size_input),    # Increase beam search for better word accuracy
+        best_of=int(best_of_input),        # Pick the best transcription from multiple runs
+        patience=patience_input,           # Allow more time before closing segments
+        condition_on_previous_text=condition_toggle,             # Ensure no contextual bias from previous words
+        compression_ratio_threshold=compression_threshold_input, # Force Whisper to retain more words
+        temperature=temperature_input,       # Eliminate randomness in transcription
+        language=lang                       # Language code for transcription
     )
 
     logger.debug(f"Transcription of the vocals audio segments completed.")
