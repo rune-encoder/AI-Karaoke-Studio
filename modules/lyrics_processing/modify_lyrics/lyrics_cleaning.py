@@ -34,10 +34,10 @@ def _condense_raw_lyrics(raw_lyrics):
 
                 # Extract and format the word information
                 filtered_word = {
-                    'word': word.get('word', '').strip().lower(),
-                    'start': round(word.get('start', 0), 3),
-                    'end': round(word.get('end', 0), 3),
-                    'probability': round(word.get('probability', 0), 3),
+                    'word': word.get('word', '').strip(),
+                    'start': round(word.get('start', 0), 2),
+                    'end': round(word.get('end', 0), 2),
+                    'probability': round(word.get('probability', 0), 2),
                 }
 
                 # Add the formatted word to the filtered words list
@@ -126,37 +126,31 @@ def _expand_gemini_lyrics(ai_output):
         verse_start = words[0].start  # Start time of the first word
         verse_end = words[-1].end    # End time of the last word
 
-        # Construct the complete text of the verse
-        verse_text = " ".join(word.word for word in words)
-
         # Build word details for the verse
         words_details = [
             {
                 "word": word.word,
-                "word_number": idx + 1,
                 "start": word.start,
                 "end": word.end,
             }
-            for idx, word in enumerate(words)
+            for word in words
         ]
 
         # Append the constructed verse to the formatted output
         formatted_output.append({
-            "verse_number": verse_number,
-            "text": verse_text,
             "start": verse_start,
             "end": verse_end,
             "words": words_details,
         })
 
     # Step 4: Check for anomalies in short verses
-    for i in range(1, len(formatted_output)):
-        current_verse = formatted_output[i]
-        previous_verse = formatted_output[i - 1]
+    # for i in range(1, len(formatted_output)):
+        # current_verse = formatted_output[i]
+        # previous_verse = formatted_output[i - 1]
 
         # If the start time of the current verse overlaps with the previous one, fix it
-        if current_verse["start"] < previous_verse["end"]:
+        # if current_verse["start"] < previous_verse["end"]:
             # Adjust the start time of the current verse to align properly
-            current_verse["start"] = previous_verse["end"]
+            # current_verse["start"] = previous_verse["end"]
 
     return formatted_output

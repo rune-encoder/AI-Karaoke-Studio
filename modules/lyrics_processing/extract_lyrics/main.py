@@ -62,32 +62,25 @@ def _extract_lyrics_with_timing(
     verses = []
 
     # Process each segment into a structured verse
-    # Start indexing from 1
-    for verse_index, segment in enumerate(segments, start=1):
-        logger.debug(f"Formatting segment: {verse_index}...")
-
-        # Combine all words in the segment to form the full verse text
-        verse_text = " ".join(word.word for word in segment.words)
+    logger.debug(f"Formatting segments into verses with words, timing, and predictions using the Whisper model.")
+    for segment in segments:
 
         # Create metadata for each word in the segment
         words_metadata = []
 
-        for word_index, word in enumerate(segment.words):
+        for word in segment.words:
             word_data = {
-                "word": word.word,
-                "word_number": word_index + 1,  # Word index (1-based)
-                "start": word.start,
-                "end": word.end,
-                "probability": word.probability  # Probability value
+                "word": word.word.strip(),
+                "start": round(word.start, 2),
+                "end": round(word.end, 2),
+                "probability": round(word.probability, 2)   # Probability value
             }
             words_metadata.append(word_data)
 
         # Create the verse-level metadata dictionary
         verse_data = {
-            "verse_number": verse_index,  # Verse index (1-based)
-            "text": verse_text,           # Full text of the verse
-            "start": segment.start,       # Start time of the verse
-            "end": segment.end,           # End time of the verse
+            "start": round(segment.start, 2),       # Start time of the verse
+            "end": round(segment.end, 2),           # End time of the verse
             "words": words_metadata       # Word-level metadata
         }
 
