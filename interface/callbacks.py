@@ -25,7 +25,16 @@ logger = logging.getLogger(__name__)
 # Callback Functions
 def process_audio_callback(
     audio_file,
-    override,
+    override_meta,
+    override_audio,
+    override_transcribe,
+    beam_size_input,
+    best_of_input,
+    patience_input,
+    condition_toggle,
+    compression_threshold_input,
+    temperature_input,
+    language_input,
     state_working_dir,
     state_lyrics_json,
     state_lyrics_display,
@@ -49,7 +58,16 @@ def process_audio_callback(
         raw_lyrics_path, working_dir, title, artists = handle_audio_processing(
             audio_file,
             cache_dir,
-            override_all=override,
+            override_meta,
+            override_audio,
+            override_transcribe,
+            beam_size_input,
+            best_of_input,
+            patience_input,
+            condition_toggle,
+            compression_threshold_input,
+            temperature_input,
+            language_input,
             file_name="raw_lyrics.json"
         )
 

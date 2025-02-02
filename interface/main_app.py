@@ -16,6 +16,7 @@ from .helpers import (
     check_modify_ai_availability,
     check_generate_karaoke_availability,
     get_effect_video_list,
+    get_available_languages,
 )
 
 from modules import (
@@ -34,6 +35,7 @@ def main_app(cache_dir, output_dir, project_root):
         available_fonts = get_font_list()
         available_colors = get_available_colors()
         available_effects = ["None"] + get_effect_video_list(effects_dir)
+        available_langs = ["Auto Detect"] + sorted(get_available_languages().keys())
 
         ##############################################################################
         #                               APP STATES
@@ -68,11 +70,58 @@ def main_app(cache_dir, output_dir, project_root):
 
                 # --- ADVANCED SETTINGS ---
                 with gr.Accordion("Developer Settings", open=False):
+                    force_meta_fetch = gr.Checkbox(
+                        label="Re-run Metadata Fetching?",
+                        value=False,
+                        info="Forces re-running metadata fetching (artist, song name, etc.)."
+                    )
                     force_audio_processing = gr.Checkbox(
                         label="Re-run Audio Processing?",
                         value=False,
-                        info="Forces re-running the entire audio pipeline (stem separation, transcription, etc.)."
+                        info="Forces re-running the audio processing (stem separation, stem merging, etc.)."
                     )
+                    force_transcription = gr.Checkbox(
+                        label="Re-run Vocals Transcription?",
+                        value=False,
+                        info="Forces re-running the audio transcription (vocals transcription, etc.)."
+                    )
+
+                with gr.Accordion("Transcription Accuracy Settings (Advanced)", open=False):
+                    with gr.Row():
+                        with gr.Column():
+                            beam_size_input = gr.Slider(
+                                minimum=1, maximum=20, step=1, value=15,
+                                label="Beam Size (Higher = More Accuracy, Slower)"
+                            )
+                            best_of_input = gr.Slider(
+                                minimum=1, maximum=10, step=1, value=5,
+                                label="Best Of (Higher = More Alternatives Evaluated)"
+                            )
+                        with gr.Column():
+                            patience_input = gr.Number(
+                                value=3.0, label="Patience (Extra Time for Segments)"
+                            )
+                            condition_toggle = gr.Checkbox(
+                                label="Condition on Previous Text",
+                                value=False,
+                                info="For karaoke, set to False to help capture repeated words."
+                            )
+                        with gr.Column():
+                            compression_threshold_input = gr.Slider(
+                                minimum=1.0, maximum=2.0, step=0.1, value=1.3,
+                                label="Compression Ratio Threshold"
+                            )
+                            temperature_input = gr.Slider(
+                                minimum=0.0, maximum=1.0, step=0.1, value=0.0,
+                                label="Temperature (0 = Deterministic)"
+                            )
+                    with gr.Row():
+                        language_input = gr.Dropdown(
+                            choices=available_langs,
+                            label="Transcription Language", 
+                            value="Auto Detect",
+                            info="Select a language if auto-detection is not reliable; otherwise, choose 'Auto Detect'."
+                        )
 
                 process_audio_button = gr.Button(
                     "Process Audio",
@@ -150,12 +199,12 @@ def main_app(cache_dir, output_dir, project_root):
             with gr.Accordion("Developer Settings", open=False):
                 force_refetch_lyrics = gr.Checkbox(
                     label="Re-Fetch Reference Lyrics?",
-                    value=True,
+                    value=False,
                     info="Ignores the local `reference_lyrics.json` and fetches new lyrics from the API."
                 )
                 force_ai_modification = gr.Checkbox(
                     label="Re-run AI Lyric Modification?",
-                    value=True,
+                    value=False,
                     info="Ignores previously AI generated `modified_lyrics.json` and re-aligns the lyrics with AI."
                 )
         gr.HTML("<hr>")
@@ -350,7 +399,16 @@ def main_app(cache_dir, output_dir, project_root):
             fn=process_audio_callback,
             inputs=[
                 audio_input,
+                force_meta_fetch,
                 force_audio_processing,
+                force_transcription,
+                beam_size_input,
+                best_of_input,
+                patience_input,
+                condition_toggle,
+                compression_threshold_input,
+                temperature_input,
+                language_input,
                 state_working_dir,
                 state_lyrics_json,
                 state_lyrics_display,
