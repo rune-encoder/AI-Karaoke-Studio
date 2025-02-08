@@ -29,7 +29,7 @@ def _get_log_filename(folder_path):
     return log_file_path
 
 
-def _cleanup_old_logs(folder_path, retention_days=7):
+def _cleanup_old_logs_by_days(folder_path, retention_days=7):
     """
     Deletes log files older than the retention period.
 
@@ -59,7 +59,30 @@ def _cleanup_old_logs(folder_path, retention_days=7):
                 os.remove(file_path)
 
 
-def configure_logging(verbose=False, logs_folder='logs', retention_days=7):
+def _cleanup_logs_by_number(folder_path, max_logs=10):
+    """
+    Ensures that only the newest `max_logs` log files remain in the folder.
+    Removes the oldest files if the count exceeds `max_logs`.
+    """
+    # Get a list of *.log files in the folder
+    log_files = [f for f in os.listdir(folder_path) if f.endswith('.log')]
+    
+    # If total logs are within the limit, nothing to do
+    if len(log_files) <= max_logs:
+        return
+
+    # Sort files by creation time (oldest first)
+    log_files.sort(key=lambda f: os.path.getctime(os.path.join(folder_path, f)))
+
+    # Number of files to remove
+    files_to_remove = len(log_files) - max_logs
+
+    # Remove the oldest files
+    for i in range(files_to_remove):
+        os.remove(os.path.join(folder_path, log_files[i]))
+
+
+def configure_logging(verbose=False, logs_folder='logs', max_logs=10):
     """
     Configures the root logger with verbosity and formatting.
 
@@ -83,7 +106,7 @@ def configure_logging(verbose=False, logs_folder='logs', retention_days=7):
     logs_path = _create_logs_folder(logs_folder)
 
     # Cleanup old logs
-    _cleanup_old_logs(logs_path, retention_days)
+    _cleanup_logs_by_number(logs_path, max_logs)
 
     # Get log file path
     log_file = _get_log_filename(logs_path)
@@ -94,7 +117,7 @@ def configure_logging(verbose=False, logs_folder='logs', retention_days=7):
         datefmt=date_format,
         log_colors={
             'DEBUG': 'white',
-            'INFO': 'blue',
+            'INFO': 'green',
             'WARNING': 'yellow',
             'ERROR': 'red',
             'CRITICAL': 'bold_red',

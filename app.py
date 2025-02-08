@@ -8,7 +8,7 @@ def run():
     project_root, cache_dir, output_dir = initialize_directories()
 
     # Configure logging based on the verbose flag
-    configure_logging(verbose=True)
+    configure_logging(verbose=False)
 
     # Launch the main application
     app = main_app(cache_dir, output_dir, project_root)

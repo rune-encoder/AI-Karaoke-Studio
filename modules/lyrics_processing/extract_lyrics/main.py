@@ -56,7 +56,6 @@ def _extract_lyrics_with_timing(
     )
 
     logger.debug(f"Transcription of the vocals audio segments completed.")
-    print("INFO:", info)
 
     # Initialize an empty list to hold the processed verses
     verses = []
@@ -73,7 +72,7 @@ def _extract_lyrics_with_timing(
                 "word": word.word.strip(),
                 "start": round(word.start, 2),
                 "end": round(word.end, 2),
-                "probability": round(word.probability, 2)   # Probability value
+                # "probability": round(word.probability, 2)
             }
             words_metadata.append(word_data)
 

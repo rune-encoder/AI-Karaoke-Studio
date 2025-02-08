@@ -80,12 +80,3 @@ INSTRUCTIONS:
 {PARSER.get_format_instructions()}
 """
     return PROMPT
-
-
-# Your task is to align the raw transcribed lyrics in this chunk with the corrected lyrics, ensuring that the output aligns as closely as possible with the corrected lyrics while adhering to the provided constraints
-
-# INSTRUCTIONS:
-# ===================
-# 1. Do not backtrack or reuse previous timings for subsequent words. Timing must always progress forward.
-# 2. Ensure each word's start time is greater than or equal to the end time of the previous word.
-# 3. If a word's timing is inconsistent or overlaps, adjust it to fit the timeline without breaking the sequence.

@@ -29,12 +29,6 @@ def _modify_lyrics_ai(raw_lyrics, reference_lyrics):
         compressed_raw_lyrics = _condense_raw_lyrics(raw_lyrics)
         logger.debug(f"Compressed raw lyrics for processing through AI | {len(compressed_raw_lyrics)} words")
 
-        # ! DELETE THIS AFTER TESTING ==============================================
-        # import pickle
-        # with open('compressed_raw_lyrics.pkl', 'wb') as f:
-        #     pickle.dump(compressed_raw_lyrics, f)
-        # ! ========================================================================
-
         # Step 2: Flatten reference lyrics into (word, verse_number) tuples
         compressed_reference_lyrics = [
             (word, verse_number)
@@ -43,21 +37,9 @@ def _modify_lyrics_ai(raw_lyrics, reference_lyrics):
         ]
         logger.debug(f"Compressed official lyrics for processing through AI | {len(compressed_reference_lyrics)} words")
 
-        # ! DELETE THIS AFTER TESTING ==============================================
-        # import pickle
-        # with open('compressed_reference_lyrics.pkl', 'wb') as f:
-        #     pickle.dump(compressed_reference_lyrics, f)
-        # ! ========================================================================
-
         # Step 3: Process the lyrics in chunks and align them
         modified_lyrics = _process_lyrics_in_chunks(compressed_raw_lyrics, compressed_reference_lyrics)
         logger.debug(f"Lyrics successfully processed through AI | {len(modified_lyrics)} words")
-
-        # ! DELETE THIS AFTER TESTING ==========================================
-        # import pickle
-        # with open('modified_lyrics_post.pkl', 'wb') as f:
-        #     pickle.dump(modified_lyrics, f)
-        # ! ====================================================================
 
         # Step 4: Expand the processed lyrics back to the original verse structure
         formatted_modified_lyrics = _expand_gemini_lyrics(modified_lyrics)
