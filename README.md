@@ -384,7 +384,7 @@ This design ensures you don’t waste time repeatedly re-running expensive AI ta
 ---
 
 ## License
-This project is licensed under the **MIT License**. See `LICENSE` for details.
+This project is licensed under the **Apache License**. See `LICENSE` for details.
 
 <br>
 
