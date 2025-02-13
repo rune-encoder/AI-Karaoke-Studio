@@ -1,4 +1,4 @@
-# AI Karaoke Video Creator
+# AI Karaoke Studio: Create Karaoke Videos 10x Faster!
 
 <p align="center"> 
 <img src="https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=fff&style=flat" alt="Python Badge"/> 
