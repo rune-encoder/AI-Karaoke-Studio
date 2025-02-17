@@ -1,0 +1,23 @@
+services:
+  ai-karaoke:
+    build: .
+    image: rune-encoder/ai-karaoke-studio
+    #entrypoint: tail -f /dev/null
+    environment:
+      ACOUST_ID: ${ACOUST_ID}
+      GENIUS_API_ACCESS_TOKEN: ${GENIUS_API_ACCESS_TOKEN}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    ports:
+      - 7860:7860
+    volumes:
+      - ./cache:/app/cache:rw
+      - ./effects:/app/effects:ro
+      - ./logs:/app/logs:rw
+      - ./output:/app/output:rw
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
