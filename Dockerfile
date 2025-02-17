@@ -31,6 +31,12 @@ RUN conda create --name karaoke_env python=3.10 -y && conda init bash
 
 FROM base AS download
 
+RUN curl -L https://huggingface.co/Systran/faster-whisper-large-v2/resolve/main/model.bin?download=true --create-dirs -o /root/.cache/huggingface/hub/models--Systran--faster-whisper-large-v2/blobs/bf2a9746382e1aa7ffff6b3a0d137ed9edbd9670c3b87e5d35f5e85e70d0333a
+RUN curl -L https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/04573f0d-f3cf25b2.th --create-dirs -o /root/.cache/torch/hub/checkpoints/04573f0d-f3cf25b2.th
+RUN curl -L https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/92cfc3b6-ef3bcb9c.th --create-dirs -o /root/.cache/torch/hub/checkpoints/92cfc3b6-ef3bcb9c.th
+RUN curl -L https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/d12395a8-e57c48e6.th --create-dirs -o /root/.cache/torch/hub/checkpoints/d12395a8-e57c48e6.th
+RUN curl -L https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/f7e0c4bc-ba3fe64a.th --create-dirs -o /root/.cache/torch/hub/checkpoints/f7e0c4bc-ba3fe64a.th
+
 RUN source activate && conda activate karaoke_env && \
   pip download torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
 
@@ -88,12 +94,6 @@ ENV PYTHONPATH=/app \
   NVIDIA_VISIBLE_DEVICES=all
 
 FROM install AS publish
-
-RUN curl -L https://huggingface.co/Systran/faster-whisper-large-v2/blob/main/model.bin --create-dirs -o /root/.cache/huggingface/hub/models--Systran--faster-whisper-large-v2/blobs/bf2a9746382e1aa7ffff6b3a0d137ed9edbd9670c3b87e5d35f5e85e70d0333a
-RUN curl -L https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/04573f0d-f3cf25b2.th --create-dirs -o /root/.cache/torch/hub/checkpoints/04573f0d-f3cf25b2.th
-RUN curl -L https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/92cfc3b6-ef3bcb9c.th --create-dirs -o /root/.cache/torch/hub/checkpoints/92cfc3b6-ef3bcb9c.th
-RUN curl -L https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/d12395a8-e57c48e6.th --create-dirs -o /root/.cache/torch/hub/checkpoints/d12395a8-e57c48e6.th
-RUN curl -L https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/f7e0c4bc-ba3fe64a.th --create-dirs -o /root/.cache/torch/hub/checkpoints/f7e0c4bc-ba3fe64a.th
 
 WORKDIR /app
 RUN echo '' > ./requirements.txt
