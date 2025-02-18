@@ -66,14 +66,19 @@ Typical manual workflows can take **4-8 hours** per song. With AI-driven automat
     - [Optional GPU Acceleration (NVIDIA Only)](#optional-gpu-acceleration-nvidia-only)  
     - [Step 4: Install Dependencies](#step-4-install-dependencies)  
     - [Step 5: Running the App](#step-5-running-the-app)  
-6. [How to Use](#how-to-use)  
+6. [Installation & Setup with Docker](#installation--setup-with-docker)  
+    - [Step 1: Install Docker Desktop](#step-1-install-docker-desktop)  
+    - [Step 2: Build docker image](#step-2-build-docker-image)  
+    - [Step 3: Set Up API Keys](#step-3-set-up-api-keys)  
+    - [Step 4: Running the App](#step-4-running-the-app)  
+7. [How to Use](#how-to-use)  
     - [Step 1: Audio Processing & Transcription](#step-1-audio-processing--transcription)  
     - [Step 2: Lyric Correction & Alignment](#step-2-lyric-correction--alignment)  
     - [Step 3: Karaoke Video Generation](#step-3-karaoke-video-generation)  
-7. [Customization](#customization)  
-8. [Caching Mechanism](#caching-mechanism)  
-9. [Benefits](#benefits)  
-10. [License](#license)  
+8. [Customization](#customization)  
+9. [Caching Mechanism](#caching-mechanism)  
+10. [Benefits](#benefits)  
+11. [License](#license)  
 
 <br>
 
@@ -275,6 +280,95 @@ chmod +x setup.sh
 conda activate karaoke_env
 python app.py
 ```
+> _**A local Gradio link will appear in your terminal. Open it in your browser to use the app.**_
+
+<br>
+
+---
+
+## Installation & Setup with Docker
+
+### Step 1: Install Docker Desktop
+
+<details open> <summary><strong>Windows</strong></summary>
+
+1. Follow the official [WSL 2 installation guide](https://learn.microsoft.com/en-us/windows/wsl/install).
+2. Install [Ubuntu 22.04 into WSL](https://learn.microsoft.com/en-us/windows/wsl/install#install-wsl-command).
+    ```sh
+    wsl --install -d Ubuntu-24.04
+    ```
+3. Download and install [Docker Desktop](https://docs.docker.com/desktop/setup/install/windows-install/).
+4. Check successful installation:
+    ```sh
+    docker run --rm hello-world
+    ```
+    It will be typed "`Hello from Docker!`".
+</details>
+
+<details> <summary><strong>Linux</strong></summary>
+
+1. Follow the official [Docker Desktop installation guide](https://docs.docker.com/desktop/setup/install/linux/).
+2. Check successful installation:
+    ```sh
+    docker run --rm hello-world
+    ```
+    It will be typed "`Hello from Docker!`".
+</details>
+
+<details> <summary><strong>MacOS</strong></summary>
+
+1. Follow the official [Docker Desktop installation guide](https://docs.docker.com/desktop/setup/install/mac-install/).
+2. Check successful installation:
+    ```sh
+    docker run --rm hello-world
+    ```
+    It will be typed "`Hello from Docker!`".
+</details>
+
+<br>
+
+---
+
+### Step 2: Build docker image
+
+Make sure you have **120 GB** of free disk space.  
+Even on a modern computer, the operation will take more than 30 minutes.
+
+```sh
+docker compose build
+```
+
+<br>
+
+---
+
+### Step 3: Set Up API Keys
+
+The app requires API keys for fetching metadata, lyrics, and AI-based modifications.
+1. **[AcoustID API Key](https://acoustid.org/)** - (optional) Fetches metadata (artist, song name, etc.).
+2. **[Genius API Key](https://genius.com/)** - (optional) Fetches song lyrics.
+3. **[Gemini API Key](https://aistudio.google.com/apikey)** - (required) AI-powered lyric modification and alignment.
+
+<br>
+
+Create a `.env` file at the root of the project with the following keys (replace placeholders with your actual tokens):
+
+```ini
+ACOUST_ID=your_acoustid_api_key
+GENIUS_API_ACCESS_TOKEN=your_genius_api_key
+GEMINI_API_KEY=your_gemini_api_key
+```
+
+<br>
+
+---
+
+### Step 4: Running the App
+
+```sh
+docker compose up --no-build
+```
+
 > _**A local Gradio link will appear in your terminal. Open it in your browser to use the app.**_
 
 <br>
