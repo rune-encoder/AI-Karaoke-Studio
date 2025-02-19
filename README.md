@@ -417,7 +417,8 @@ docker compose up --no-build
 ---
 
 ### Step 3: Karaoke Video Generation
-1. **Subtitle Style**: Choose font, color, highlight, outline, and shadow settings.
+1. **Subtitle Style**: Choose font, color, highlight, outline, and shadow settings.  
+   App searches Font files in app folder `fonts/`. Copy needed fonts in folder and restart app.
 1. **Background Effects**: Optional looping `.mp4` files can be selected for a dynamic background.
 1. **Advanced Video Settings**: Set resolution (`720p`, `1080p`), FPS, bitrate, etc., based on your quality needs.
 1. **Generate Karaoke**: Click the button to produce your final video.

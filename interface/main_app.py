@@ -27,12 +27,13 @@ from modules import (
 import pandas as pd
 
 # Main App Interface
-def main_app(cache_dir, output_dir, project_root):
+def main_app(cache_dir, fonts_dir, output_dir, project_root):
+    gr.set_static_paths(fonts_dir)
     with gr.Blocks(theme='shivi/calm_seafoam') as app:
         effects_dir = project_root / "effects"
 
         # Get available fonts and colors for subtitles
-        available_fonts = get_font_list()
+        available_fonts = get_font_list(fonts_dir)
         available_colors = get_available_colors()
         available_effects = ["None"] + get_effect_video_list(effects_dir)
         available_langs = ["Auto Detect"] + sorted(get_available_languages().keys())
@@ -217,8 +218,8 @@ def main_app(cache_dir, output_dir, project_root):
         with gr.Row():
             # --- Subtitles basic options ---
             font_input = gr.Dropdown(
-                choices=available_fonts,
-                value="Maiandra GD",
+                choices=list(available_fonts.keys()),
+                value="",
                 label="Font"
             )
             primary_color_input = gr.Dropdown(
@@ -372,7 +373,7 @@ def main_app(cache_dir, output_dir, project_root):
         #             SUBTITLE STYLE PREVIEW (live updates on color/font changes)
         ##############################################################################
         def update_subtitle_preview(*args):
-            return generate_font_preview_callback(*args)
+            return generate_font_preview_callback(*args, available_fonts=available_fonts)
 
         font_preview_inputs = [
             font_input,
@@ -572,4 +573,4 @@ def main_app(cache_dir, output_dir, project_root):
             outputs=[karaoke_video_output]  # or karaoke_status_output, or both
         )
 
-    return app
+        return app

@@ -48,10 +48,12 @@ def initialize_directories():
 
     project_root = _get_project_root()
     cache_dir = project_root / "cache"
+    fonts_dir = project_root / "fonts"
     output_dir = project_root / "output"
 
     # Ensure that the cache and output directories exist
     cache_dir.mkdir(parents=True, exist_ok=True)
+    fonts_dir.mkdir(parents=True, exist_ok=True)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    return project_root, cache_dir, output_dir
+    return project_root, cache_dir, fonts_dir, output_dir
