@@ -77,7 +77,6 @@ call pip install deep_translator
 call pip install langchain
 call pip install langchain_google_genai
 call pip install --upgrade gradio
-call python -m pip install -U matplotlib
 
 echo Setup complete! Run "conda activate karaoke_env" to start using your environment.
 pause

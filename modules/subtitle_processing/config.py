@@ -1,12 +1,29 @@
 # Third-party imports
-import matplotlib.font_manager as fm
+import os
 
+def get_font_list(font_directory):
+    """
+    Retrieve a dictionary containing font filenames (without extension) and their full paths.
 
-def get_font_list():
-    """Retrieve a list of unique font names."""
-    fonts = [f.name for f in fm.fontManager.ttflist]
-    unique_fonts = set(fonts)
-    return sorted(unique_fonts)
+    Parameters:
+        font_directory (str): Path to the directory containing font files.
+
+    Returns:
+        dict: Dictionary in the format (font_name, font_path).
+    """
+    font_dict = {}
+    if not os.path.isdir(font_directory):
+        return font_dict
+
+    for filename in os.listdir(font_directory):
+        extension = os.path.splitext(filename)[1].lower()
+        match extension:
+            case '.ttf' | '.woff' | '.woff2' | '.otf':
+                font_path = os.path.join(font_directory, filename)
+                font_name = os.path.splitext(filename)[0]
+                font_dict[font_name] = font_path
+
+    return font_dict
 
 def get_available_colors():
     """Generate a dictionary of color names and their ASS-compatible codes."""

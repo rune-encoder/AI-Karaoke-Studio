@@ -51,7 +51,6 @@ RUN source activate && conda activate karaoke_env && \
     langchain \
     langchain_google_genai \
     gradio \
-    matplotlib \
     colorama
 
 RUN source activate && conda activate karaoke_env && \
@@ -74,7 +73,6 @@ RUN source activate && conda activate karaoke_env && \
     langchain \
     langchain_google_genai \
     gradio \
-    matplotlib \
     colorama && \
   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126 && \
   pip cache purge && \
@@ -97,7 +95,7 @@ FROM install AS publish
 
 WORKDIR /app
 RUN echo '' > ./requirements.txt
-COPY app.py LICENSE README.md .
+COPY app.py LICENSE README.md ./
 COPY interface ./interface
 COPY modules ./modules
 

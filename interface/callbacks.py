@@ -8,7 +8,8 @@ import json
 from .helpers import (
     display_dataframe_from_lyrics,
     load_json_file,
-    save_json_file
+    save_json_file,
+    get_font_format,
 )
 from .handlers import handle_audio_processing
 from modules import (
@@ -281,6 +282,7 @@ def generate_font_preview_callback(
     outline_size: int,
     shadow_color: str,
     shadow_size: int,
+    available_fonts: dict,
 ):
     """
     Generates the subtitle file and returns a formatted HTML preview of subtitles.
@@ -296,8 +298,16 @@ def generate_font_preview_callback(
         f'{preview_text[split_index:]}</span>'
     )
 
+    font_format = get_font_format(available_fonts[font])
+
     # Generate preview HTML
     preview_html = f"""
+    <style >
+        @font-face {{
+            font-family: {font};
+            src: url('gradio_api/file={available_fonts[font]}') format('{font_format}');
+        }}
+    </style>
     <div style="
         font-family: {font};
         font-size: 24px;  /* Fixed size for compact preview */

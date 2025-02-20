@@ -2,7 +2,6 @@ import subprocess
 import time
 import os
 from colorama import Fore, Style
-import matplotlib.font_manager as fm
 
 def extract_audio_duration(audio_path):
     """

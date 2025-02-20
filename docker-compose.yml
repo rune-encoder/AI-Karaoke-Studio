@@ -11,6 +11,7 @@ services:
       - 7860:7860
     volumes:
       - ./cache:/app/cache:rw
+      - ./fonts:/app/fonts:ro
       - ./effects:/app/effects:ro
       - ./logs:/app/logs:rw
       - ./output:/app/output:rw

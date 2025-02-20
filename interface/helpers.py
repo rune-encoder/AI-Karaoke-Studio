@@ -3,6 +3,7 @@ from typing import List, Union
 from pathlib import Path
 import logging
 import json
+import os
 
 # Third-Party Imports
 import pandas as pd
@@ -176,3 +177,26 @@ def check_generate_karaoke_availability(working_dir: str) -> dict:
         return gr.update(interactive=True)
     else:
         return gr.update(interactive=False)
+
+
+def get_font_format(filepath: str) -> str:
+    """
+    Retrieve a font format for CSS-font-family.
+
+    Parameters:
+        filepath (str): Path to the file of font.
+
+    Returns:
+        str: Font format.
+    """
+    extension = os.path.splitext(filepath)[1].lower()
+
+    match extension:
+        case '.ttf':  # TrueType Font
+            return 'truetype'
+        case '.woff' | '.woff2':  # Web Open Font Format
+            return extension[1:]
+        case ".otf":  # OpenType Font
+            return 'opentype'
+        case _:
+            return ''
