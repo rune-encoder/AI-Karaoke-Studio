@@ -34,7 +34,7 @@ def main_app(cache_dir, fonts_dir, output_dir, project_root):
 
         # Get available fonts and colors for subtitles
         available_fonts = get_font_list(fonts_dir)
-        available_colors = get_available_colors()
+        available_colors = list(get_available_colors().keys())
         available_effects = ["None"] + get_effect_video_list(effects_dir)
         available_langs = ["Auto Detect"] + sorted(get_available_languages().keys())
 
@@ -377,6 +377,7 @@ def main_app(cache_dir, fonts_dir, output_dir, project_root):
 
         font_preview_inputs = [
             font_input,
+            fontsize_input,
             primary_color_input,
             secondary_color_input,
             outline_color_input,
