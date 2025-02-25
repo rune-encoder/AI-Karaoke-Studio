@@ -194,8 +194,6 @@ def get_font_format(filepath: str) -> str:
     match extension:
         case '.ttf':  # TrueType Font
             return 'truetype'
-        case '.woff' | '.woff2':  # Web Open Font Format
-            return extension[1:]
         case ".otf":  # OpenType Font
             return 'opentype'
         case _:

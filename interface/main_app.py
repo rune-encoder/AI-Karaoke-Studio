@@ -566,9 +566,10 @@ def main_app(cache_dir, fonts_dir, output_dir, project_root):
                 # Additional or override flags
                 force_subtitles_overwrite,
 
-                # Hidden state: output_dir, effects_dir
+                # Hidden state: output_dir, effects_dir, fonts_dir
                 gr.State(output_dir),
-                gr.State(effects_dir)
+                gr.State(effects_dir),
+                gr.State(fonts_dir)
             ],
             outputs=[karaoke_video_output]  # or karaoke_status_output, or both
         )

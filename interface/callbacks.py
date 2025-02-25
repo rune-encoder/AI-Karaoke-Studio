@@ -386,7 +386,8 @@ def generate_subtitles_and_video_callback(
     # Additional or override flags
     override_subs: bool,
     output_dir: str,
-    effects_dir: str
+    effects_dir: str,
+    fonts_dir: str
 ):
     """
     1) Generate Karaoke Subtitles (karaoke_subtitles.ass) 
@@ -432,6 +433,7 @@ def generate_subtitles_and_video_callback(
             working_dir=Path(working_dir),
             output_path=Path(output_dir),
             effect_path=effect_video_path,
+            fonts_path=Path(fonts_dir),
 
             # Video Settings
             resolution=resolution,
