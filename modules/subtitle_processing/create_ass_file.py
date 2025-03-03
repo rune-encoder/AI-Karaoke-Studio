@@ -62,13 +62,13 @@ def write_script_info(
 
 def write_style(
     style_name: str = "Default",
-    font: str = "Arial",
-    fontsize: int = 48,
-    primary_color: str = "&H00FFFFFF",
-    secondary_color: str = "&H0000FFFF",
-    outline_color: str = "&H00000000",
-    outline_size: int = 2,
-    shadow_color: str = "&H00000000",
+    font: str = "Lilita One Regular",
+    fontsize: int = 60,
+    primary_color: str = "&H0000A5FF",
+    secondary_color: str = "&H00FFFFFF",
+    outline_color: str = "&H00FF8080",
+    outline_size: int = 3,
+    shadow_color: str = "&H00FF8080",
     shadow_size: int = 0,
     margin_v: int = 0,
 ):
@@ -84,13 +84,13 @@ def write_style(
 
 def write_styles(
     file,
-    font: str = "Arial",
-    fontsize: int = 48,
-    primary_color: str = "&H00FFFFFF",
-    secondary_color: str = "&H0000FFFF",
-    outline_color: str = "&H00000000",
-    outline_size: int = 2,
-    shadow_color: str = "&H00000000",
+    font: str = "Lilita One Regular",
+    fontsize: int = 60,
+    primary_color: str = "&H0000A5FF",
+    secondary_color: str = "&H00FFFFFF",
+    outline_color: str = "&H00FF8080",
+    outline_size: int = 3,
+    shadow_color: str = "&H00FF8080",
     shadow_size: int = 0,
     screen_height: int = 0,
 ):
@@ -221,8 +221,8 @@ def write_lyrics_events(
     verses: list,
     screen_width: int,
     screen_height: int,
-    primary_color: str = "&H00FFFFFF",
-    highlight_color: str = "&H0000FFFF",
+    primary_color: str = "&H0000A5FF",
+    highlight_color: str = "&H0000A5FF",
     loader_color: str = "&H00FF0000",
     loader_threshold: float = 5.0,
     verses_before: int = 1,
@@ -304,13 +304,13 @@ def create_ass_file(
     verses_data: list,
     output_path: Union[str, Path],
     audio_duration: float,
-    font: str = "Arial",
-    fontsize: int = 24,
-    primary_color: str = "&H00FFFFFF",    # White in ASS color
-    secondary_color: str = "&H0000FFFF",  # Yellow or other highlight color
-    outline_color: str = "&H00000000",    # Outline color (black)
-    outline_size: int = 2,
-    shadow_color: str = "&H00000000",
+    font: str = "Lilita One Regular",
+    fontsize: int = 60,
+    primary_color: str = "&H0000A5FF",    # White in ASS color
+    secondary_color: str = "&H00FFFFFF",  # Yellow or other highlight color
+    outline_color: str = "&H00FF8080",    # Outline color (black)
+    outline_size: int = 3,
+    shadow_color: str = "&H00FF8080",
     shadow_size: int = 0,
     title: str = "Karaoke",
     screen_width: int = 1280,
@@ -329,10 +329,10 @@ def create_ass_file(
     """
     try:
         available_colors = get_available_colors()
-        primary_color = validate_and_get_color(primary_color, "&H00FFFFFF", available_colors)
-        secondary_color = validate_and_get_color(secondary_color, "&H0000FFFF", available_colors)
-        outline_color = validate_and_get_color(outline_color, "&H00000000", available_colors)
-        shadow_color = validate_and_get_color(shadow_color, "&H00000000", available_colors)
+        primary_color = validate_and_get_color(primary_color, "&H0000A5FF", available_colors)
+        secondary_color = validate_and_get_color(secondary_color, "&H00FFFFFF", available_colors)
+        outline_color = validate_and_get_color(outline_color, "&H00FF8080", available_colors)
+        shadow_color = validate_and_get_color(shadow_color, "&H00FF8080", available_colors)
 
         with open(output_path, "w", encoding="utf-8") as file:
             # [Script Info]

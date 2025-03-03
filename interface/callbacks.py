@@ -304,9 +304,9 @@ def generate_font_preview_callback(
     # Words to highlight (make the second half different color)
     split_index = len(preview_text) // 2
     highlighted_text = (
-        f'<span style="color: {ass_to_css_color(available_colors[secondary_color])};">'
-        f'{preview_text[:split_index]}</span>'
         f'<span style="color: {ass_to_css_color(available_colors[primary_color])};">'
+        f'{preview_text[:split_index]}</span>'
+        f'<span style="color: {ass_to_css_color(available_colors[secondary_color])};">'
         f'{preview_text[split_index:]}</span>'
     )
     font_format = get_font_format(available_fonts[font])

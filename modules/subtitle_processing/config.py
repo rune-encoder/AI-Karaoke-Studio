@@ -18,7 +18,7 @@ def get_font_list(font_directory):
     for filename in os.listdir(font_directory):
         extension = os.path.splitext(filename)[1].lower()
         match extension:
-            case '.ttf' | '.woff' | '.woff2' | '.otf':
+            case '.ttf' | '.otf':
                 font_path = os.path.join(font_directory, filename)
                 font_name = os.path.splitext(filename)[0]
                 font_dict[font_name] = font_path
