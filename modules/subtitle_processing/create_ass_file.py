@@ -5,15 +5,14 @@ from typing import Union
 # Local Application Imports
 from .config import (get_available_colors, validate_and_get_color)
 
+from .utilities import get_ass_rounded_rectangle
+
 # Song title showing duration
 # title_duration must be less then first_verse_start
 title_duration = 4
 
 # Duration between hiding old text and showing new text
 gap_duration = 0.1
-
-# The symbol that will represent the loader
-loader_char = '█'
 
 
 def format_time(seconds: float) -> str:
@@ -216,6 +215,7 @@ def extend_last_event(
         write_dialogue(file, last_verse_end, audio_duration, '')
 
 
+
 def write_lyrics_events(
     file,
     verses: list,
@@ -227,6 +227,7 @@ def write_lyrics_events(
     loader_threshold: float = 5.0,
     verses_before: int = 1,
     verses_after: int = 1,
+    fontsize: int = 60,
 ):
     """
     Write karaoke-style dialogues with a 'window' of verses showing.
@@ -274,7 +275,7 @@ def write_lyrics_events(
             len_word = 7 if word_duration > 2800 else word_duration // 400
             # If len_word = 0 then it will be invisible short loader
             verse["words"].insert(0, {
-                "word": loader_char*len_word,
+                "word": get_ass_rounded_rectangle(fontsize*len_word, fontsize*2//3, fontsize//5),
                 "start": prev_verse_end,
                 "end": verse["words"][0]["start"]
             })
@@ -375,6 +376,7 @@ def create_ass_file(
                 loader_threshold=loader_threshold,
                 verses_before=verses_before,
                 verses_after=verses_after,
+                fontsize=fontsize,
             )
 
             # Extend last event if there's leftover audio
