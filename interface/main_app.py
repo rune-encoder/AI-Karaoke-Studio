@@ -34,7 +34,7 @@ def main_app(cache_dir, fonts_dir, output_dir, project_root):
 
         # Get available fonts and colors for subtitles
         available_fonts = get_font_list(fonts_dir)
-        available_colors = get_available_colors()
+        available_colors = list(get_available_colors().keys())
         available_effects = ["None"] + get_effect_video_list(effects_dir)
         available_langs = ["Auto Detect"] + sorted(get_available_languages().keys())
 
@@ -219,17 +219,17 @@ def main_app(cache_dir, fonts_dir, output_dir, project_root):
             # --- Subtitles basic options ---
             font_input = gr.Dropdown(
                 choices=list(available_fonts.keys()),
-                value="",
+                value="Lilita One Regular" if "Lilita One Regular" in available_fonts else next(iter(available_fonts)),
                 label="Font"
             )
             primary_color_input = gr.Dropdown(
                 choices=available_colors,
-                value="White",
+                value="Orange",
                 label="Font Color"
             )
             secondary_color_input = gr.Dropdown(
                 choices=available_colors,
-                value="Yellow",
+                value="White",
                 label="Font Highlight Color"
             )
             effect_dropdown = gr.Dropdown(
@@ -248,7 +248,7 @@ def main_app(cache_dir, fonts_dir, output_dir, project_root):
                     minimum=12,
                     maximum=84,
                     step=1,
-                    value=42,
+                    value=60,
                     label="Font Size",
                 )
                 loader_threshold_input = gr.Slider(
@@ -263,21 +263,21 @@ def main_app(cache_dir, fonts_dir, output_dir, project_root):
                 with gr.Column():
                     outline_color_input = gr.Dropdown(
                         choices=available_colors,
-                        value="Black",
+                        value="Light Blue",
                         label="Outline Color"
                     )
                     outline_size_input = gr.Slider(
                         minimum=0,
                         maximum=7,
                         step=1,
-                        value=1,
+                        value=3,
                         label="Outline Size",
                     )
 
                 with gr.Column():
                     shadow_color_input = gr.Dropdown(
                         choices=available_colors,
-                        value="Black",
+                        value="Light Blue",
                         label="Shadow Color"
                     )
                     shadow_size_input = gr.Slider(
@@ -377,6 +377,7 @@ def main_app(cache_dir, fonts_dir, output_dir, project_root):
 
         font_preview_inputs = [
             font_input,
+            fontsize_input,
             primary_color_input,
             secondary_color_input,
             outline_color_input,
@@ -566,9 +567,10 @@ def main_app(cache_dir, fonts_dir, output_dir, project_root):
                 # Additional or override flags
                 force_subtitles_overwrite,
 
-                # Hidden state: output_dir, effects_dir
+                # Hidden state: output_dir, effects_dir, fonts_dir
                 gr.State(output_dir),
-                gr.State(effects_dir)
+                gr.State(effects_dir),
+                gr.State(fonts_dir)
             ],
             outputs=[karaoke_video_output]  # or karaoke_status_output, or both
         )

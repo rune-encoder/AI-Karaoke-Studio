@@ -5,6 +5,16 @@ from typing import Union
 # Local Application Imports
 from .config import (get_available_colors, validate_and_get_color)
 
+from .utilities import get_ass_rounded_rectangle
+
+# Song title showing duration
+# title_duration must be less then first_verse_start
+title_duration = 4
+
+# Duration between hiding old text and showing new text
+gap_duration = 0.1
+
+
 def format_time(seconds: float) -> str:
     """
     Convert a float time in seconds to an ASS-formatted timestamp:
@@ -49,37 +59,81 @@ def write_script_info(
     write_section(file, "Script Info", content)
 
 
+def write_style(
+    style_name: str = "Default",
+    font: str = "Lilita One Regular",
+    fontsize: int = 60,
+    primary_color: str = "&H0000A5FF",
+    secondary_color: str = "&H00FFFFFF",
+    outline_color: str = "&H00FF8080",
+    outline_size: int = 3,
+    shadow_color: str = "&H00FF8080",
+    shadow_size: int = 0,
+    margin_v: int = 0,
+):
+    return (
+        f"Style: {style_name},{font},{fontsize},{primary_color},{secondary_color},"
+        f"{outline_color},{shadow_color},"              # Use shadow_color instead of hardcoded black &H00000000
+        "1,0,0,0,"                                      # Bold=1, Italic, Underline, StrikeOut
+        "100,100,0,0,"                                  # ScaleX=100, ScaleY=100, Spacing, Angle
+        f"1,{outline_size},{shadow_size},"              # BorderStyle=1, Outline=..., Shadow=...
+        f"2,0,0,{margin_v},1\n"                         # Align=2, MarginV=..., Encoding=1
+    )
+
+
 def write_styles(
     file,
-    font: str = "Arial",
-    fontsize: int = 48,
-    primary_color: str = "&H00FFFFFF",
-    secondary_color: str = "&H0000FFFF",
-    outline_color: str = "&H00000000",
-    outline_size: int = 2,
-    shadow_color: str = "&H00000000",
+    font: str = "Lilita One Regular",
+    fontsize: int = 60,
+    primary_color: str = "&H0000A5FF",
+    secondary_color: str = "&H00FFFFFF",
+    outline_color: str = "&H00FF8080",
+    outline_size: int = 3,
+    shadow_color: str = "&H00FF8080",
     shadow_size: int = 0,
+    screen_height: int = 0,
 ):
     """
     Write the [V4+ Styles] section with customizable font/color/outline/shadow.
 
-    BorderStyle=1 => text has an outline rather than a box. 
+    BorderStyle=1 => text has an outline rather than a box.
     """
     # You can choose to force BorderStyle=1 for outlines or 3 for "Opaque box" if you prefer.
     # Here we do BorderStyle=1 (outline).
     style_content = (
         "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, "
-        "OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, "
-        "ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, "
+        "OutlineColour, BackColour, "
+        "Bold, Italic, Underline, StrikeOut, "
+        "ScaleX, ScaleY, Spacing, Angle, "
+        "BorderStyle, Outline, Shadow, "
         "Alignment, MarginL, MarginR, MarginV, Encoding\n"
-        f"Style: Default,{font},{fontsize},{primary_color},{secondary_color},"
-        # BackColour: transparent
-        f"{outline_color},{shadow_color},"              # Use shadow_color instead of hardcoded black &H00000000
-        "0,0,0,0,"                                      # Bold, Italic, Underline, StrikeOut
-        "100,100,0,0,"                                  # ScaleX, ScaleY, Spacing, Angle
-        # BorderStyle=1, Outline=..., Shadow=..., Align=5
-        f"1,{outline_size},{shadow_size},5,0,0,0,1\n"
     )
+    style_content += write_style(
+        "Default",
+        font,
+        fontsize,
+        primary_color,
+        secondary_color,
+        outline_color,
+        outline_size,
+        shadow_color,
+        shadow_size,
+        int(screen_height*0.4),
+    )
+    for (l_index, l_margin) in [(0, 0.8), (1, 0.6), (2, 0.4), (3, 0.2)]:
+        style_content += write_style(
+            f"Line{l_index}",
+            font,
+            fontsize,
+            primary_color,
+            secondary_color,
+            outline_color,
+            outline_size,
+            shadow_color,
+            shadow_size,
+            int(screen_height*l_margin),
+        )
+
     write_section(file, "V4+ Styles", style_content)
 
 
@@ -107,8 +161,7 @@ def write_dialogue(
         Dialogue: 0,0:00:01.20,0:00:03.00,Default,,0,0,0,,Some text
     """
     file.write(
-        f"Dialogue: 0,{format_time(start)},{format_time(end)},{style},,"
-        f"{margin_l},{margin_r},{margin_v},,{text}\n"
+        f"Dialogue: 0,{format_time(start)},{format_time(end)},{style},,{margin_l},{margin_r},{margin_v},,{text}\n"
     )
 
 
@@ -129,42 +182,27 @@ def write_title_event(
 
 def write_loader_event(
     file,
+    start_time: float,
     loader_duration: float,
     screen_width: int,
     screen_height: int,
     loader_color: str = "&H00FF0000",
     border_color: str = "&HFFFFFF00",
-    start_time: float = 0.0
 ):
     """
     Display a progressive loader for 'loader_duration' seconds. 
-    Each segment is ~ (loader_duration / bar_length).
     """
     margin_v = screen_height // 2
     bar_length = 30
-    segment_dur = loader_duration / bar_length
+    loader_text = '█'*bar_length
 
-    for i in range(1, bar_length + 1):
-        # Each iteration: fill i squares, unfilled (bar_length - i).
-        # We color the unfilled squares with alpha=0 (invisible).
-        # filled = f"{{\\c{loader_color}}}|{'█'*i}"
-        # unfilled = f"{{\\c&H00000000}}{'█'*(bar_length-i)}"
-        # trailing = f"{{\\c{loader_color}}}|"
-
-        filled = f"{{\\c{loader_color}}}{'█'*i}"
-        unfilled = f"{{\\c&H80000000}}{'█'*(bar_length-i)}"
-
-        loader_text = filled + unfilled
-
-        seg_start = start_time + (i - 1) * segment_dur
-        seg_end = start_time + i * segment_dur
-        write_dialogue(file, seg_start, seg_end,loader_text, margin_v=margin_v)
+    write_dialogue(file, start_time, start_time + loader_duration, loader_text, margin_v=margin_v)
 
 
 def extend_last_event(
-        file,
-        verses,
-        audio_duration
+    file,
+    verses,
+    audio_duration
 ):
     """
     Extend the final subtitle to the end of the audio if leftover time exists.
@@ -174,178 +212,106 @@ def extend_last_event(
 
     last_verse_end = verses[-1]["end"]
     if last_verse_end < audio_duration:
-        file.write(
-            f"Dialogue: 0,{format_time(last_verse_end)},"
-            f"{format_time(audio_duration)},Default,,0,0,0,,\n"
-        )
+        write_dialogue(file, last_verse_end, audio_duration, '')
+
 
 
 def write_lyrics_events(
     file,
-    verses,
-    primary_color: str = "&H00FFFFFF",
-    highlight_color: str = "&H0000FFFF",
+    verses: list,
+    screen_width: int,
+    screen_height: int,
+    primary_color: str = "&H0000A5FF",
+    highlight_color: str = "&H0000A5FF",
     loader_color: str = "&H00FF0000",
     loader_threshold: float = 5.0,
     verses_before: int = 1,
     verses_after: int = 1,
+    fontsize: int = 60,
 ):
     """
-    Write karaoke-style dialogues with a 'window' of verses showing:
-      - 'verses_before' fully highlighted (previous verses)
-      - 'verses_after' unhighlighted (upcoming verses)
-      - The current verse is letter-by-letter highlighted
-
+    Write karaoke-style dialogues with a 'window' of verses showing.
     If the gap to the next verse > loader_threshold, display a loader.
     """
-    num_verses = len(verses)
 
-    def build_fully_highlighted_text(verse):
-        return " ".join(
-            f"{{\\c{highlight_color}}}{w['word']}{{\\c{primary_color}}}"
-            for w in verse["words"]
-        )
+    # Set line index, from upper [0] to bottom [3]
+    for (v_index, verse) in enumerate(verses):
+        verse["line"] = v_index % 4
 
-    def build_unhighlighted_text(verse):
-        return " ".join(w["word"] for w in verse["words"])
+    # Alternating upper and bottom verses
+    line1_end = line3_end = verses[-1]["end"]
+    for verse in reversed(verses):
+        match verse["line"]:
+            case 0:
+                verse["end"] = line1_end
+            case 1:
+                verse["end"] += gap_duration
+                line1_end = verse["end"]
+            case 2:
+                verse["end"] = line3_end
+            case 3:
+                verse["end"] += gap_duration
+                line3_end = verse["end"]
 
-    for i in range(num_verses):
-        # --- Collect previous verses (fully highlighted) ---
-        prev_texts = []
-        start_prev = max(0, i - verses_before)
-        for p in range(start_prev, i):
-            prev_texts.append(build_fully_highlighted_text(verses[p]))
+    line1_end = line3_end =  title_duration + gap_duration
+    for verse in verses:
+        match verse["line"]:
+            case 0:
+                verse["start"] = line1_end
+            case 1:
+                verse["start"] = line1_end
+                line1_end = verse["end"] + gap_duration
+            case 2:
+                verse["start"] = line3_end
+            case 3:
+                verse["start"] = line3_end
+                line3_end = verse["end"] + gap_duration
 
-        # --- Current verse (letter-by-letter highlight) ---
-        curr_verse = verses[i]
-        words = curr_verse["words"]
-        verse_start_time = words[0]["start"]
-        verse_end_time   = words[-1]["end"]
+    prev_verse_end = verses[0]["start"]
+    for verse in verses:
+        # Visible loader between last word of previous verse and first word of next verse
+        word_duration = int((verse["words"][0]["start"] - prev_verse_end)*100)
+        if word_duration > 0:
+            len_word = 7 if word_duration > 2800 else word_duration // 400
+            # If len_word = 0 then it will be invisible short loader
+            verse["words"].insert(0, {
+                "word": get_ass_rounded_rectangle(fontsize*len_word, fontsize*2//3, fontsize//5),
+                "start": prev_verse_end,
+                "end": verse["words"][0]["start"]
+            })
+        # Invisible loader which compensates for the length of all previous verses on the page
+        word_duration = int((prev_verse_end - verse["start"])*100)
+        if word_duration > 0:
+            verse["words"].insert(0, {
+                "word": '',
+                "start": verse["start"],
+                "end": prev_verse_end
+            })
+        prev_verse_end = verse["words"][-1]["end"]
 
-        # --- Collect next verses (unhighlighted) ---
-        upcoming_texts = []
-        end_next = min(num_verses, i + 1 + verses_after)
-        for n in range(i + 1, end_next):
-            upcoming_texts.append(build_unhighlighted_text(verses[n]))
+    # Apply karaoke effect
+    for verse in verses:
+        for word in verse["words"]:
+            word_duration = int((word["end"] - word["start"])*100)
+            word["word"] = f"{{\\kf{word_duration}}}{word['word']}"
 
-        # --- Letter-by-letter highlighting logic ---
-        for j, word in enumerate(words):
-            word_start = word["start"]
-            word_end   = word["end"]
-            word_text  = word["word"]
+    # Write formatted verses with loaders and karaoke effects
+    for verse in verses:
+        words = [word["word"] for word in verse["words"]]
+        write_dialogue(file, verse["start"], verse["end"], ' '.join(words), style=f"Line{verse['line']}")
 
-            # If there's a gap since the previous word, fill it
-            if j > 0:
-                prev_end = words[j - 1]["end"]
-                # Up to 'prev_end' => highlight everything spoken so far
-                if word_start > prev_end:
-                    so_far = []
-                    for w2 in words:
-                        if w2["end"] <= prev_end:
-                            so_far.append(f"{{\\c{highlight_color}}}{w2['word']}{{\\c{primary_color}}}")
-                        else:
-                            so_far.append(w2["word"])
-
-                    # Combine: previous verses + so_far + upcoming
-                    blocks = prev_texts + [" ".join(so_far)] + upcoming_texts
-                    full_text = r"\N\N\N\N".join(blocks)
-                    file.write(
-                        f"Dialogue: 0,{format_time(prev_end)},{format_time(word_start)},Default,,0,0,0,,{full_text}\n"
-                    )
-
-            # Break word_text into letters
-            char_count = len(word_text)
-            if char_count == 0:
-                continue
-
-            seg_dur = (word_end - word_start) / char_count
-            for k in range(1, char_count + 1):
-                # partial highlight up to letter k
-                highlighted_part = word_text[:k]
-                remaining_part   = word_text[k:]
-                partial_word     = f"{{\\c{highlight_color}}}{highlighted_part}{{\\c{primary_color}}}{remaining_part}"
-
-                # Build progressive text for entire verse
-                progressive = []
-                for w2 in words:
-                    if w2["start"] < word_start:
-                        # Fully highlight words before the one we're animating
-                        progressive.append(f"{{\\c{highlight_color}}}{w2['word']}{{\\c{primary_color}}}")
-                    elif w2 is word:
-                        # Only highlight the exact word we're animating
-                        progressive.append(partial_word)
-                    else:
-                        progressive.append(w2["word"])
-
-                # Combine: prev verses + current partial + upcoming
-                blocks = prev_texts + [" ".join(progressive)] + upcoming_texts
-                full_text = r"\N\N\N\N".join(blocks)
-
-                seg_start = word_start + (k - 1) * seg_dur
-                seg_end   = word_start + k * seg_dur
-                file.write(
-                    f"Dialogue: 0,{format_time(seg_start)},{format_time(seg_end)},Default,,0,0,0,,{full_text}\n"
-                )
-
-        # If leftover from last word to verse_end_time, fill it
-        if words[-1]["end"] < verse_end_time:
-            last_end = words[-1]["end"]
-            post_text = []
-            for w2 in words:
-                if w2["end"] <= last_end:
-                    post_text.append(f"{{\\c{highlight_color}}}{w2['word']}{{\\c{primary_color}}}")
-                else:
-                    post_text.append(w2["word"])
-
-            blocks = prev_texts + [" ".join(post_text)] + upcoming_texts
-            full_text = r"\N\N\N\N".join(blocks)
-            file.write(
-                f"Dialogue: 0,{format_time(last_end)},{format_time(verse_end_time)},Default,,0,0,0,,{full_text}\n"
-            )
-
-        # --- Check gap between current verse and next verse ---
-        if i + 1 < num_verses:
-            next_start    = verses[i + 1]["words"][0]["start"]
-            curr_verse_end = words[-1]["end"]
-            gap_duration   = next_start - curr_verse_end
-
-            if gap_duration <= loader_threshold:
-                # keep the fully-colored current verse on screen
-                fully_colored_current = " ".join(
-                    f"{{\\c{highlight_color}}}{w['word']}{{\\c{primary_color}}}" for w in words
-                )
-                blocks = prev_texts + [fully_colored_current] + upcoming_texts
-                full_text = r"\N\N\N\N".join(blocks)
-                file.write(
-                    f"Dialogue: 0,{format_time(curr_verse_end)},{format_time(next_start)},Default,,0,0,0,,{full_text}\n"
-                )
-            else:
-                # Show a loader if gap > loader_threshold
-                bar_length = 30
-                gap_seg_dur = gap_duration / bar_length
-
-                for seg_i in range(1, bar_length + 1):
-                    filled = f"{{\\c{loader_color}}}{'█' * seg_i}"
-                    unfilled = f"{{\\c&H80000000}}{'█' * (bar_length - seg_i)}"
-                    loader_text = filled + unfilled
-
-                    seg_start = curr_verse_end + (seg_i - 1) * gap_seg_dur
-                    seg_end   = curr_verse_end + seg_i * gap_seg_dur
-                    file.write(
-                        f"Dialogue: 0,{format_time(seg_start)},{format_time(seg_end)},Default,,0,0,0,,{loader_text}\n"
-                    )
 
 def create_ass_file(
     verses_data: list,
     output_path: Union[str, Path],
     audio_duration: float,
-    font: str = "Arial",
-    fontsize: int = 24,
-    primary_color: str = "&H00FFFFFF",    # White in ASS color
-    secondary_color: str = "&H0000FFFF",  # Yellow or other highlight color
-    outline_color: str = "&H00000000",    # Outline color (black)
-    outline_size: int = 2,
-    shadow_color: str = "&H00000000",
+    font: str = "Lilita One Regular",
+    fontsize: int = 60,
+    primary_color: str = "&H0000A5FF",    # White in ASS color
+    secondary_color: str = "&H00FFFFFF",  # Yellow or other highlight color
+    outline_color: str = "&H00FF8080",    # Outline color (black)
+    outline_size: int = 3,
+    shadow_color: str = "&H00FF8080",
     shadow_size: int = 0,
     title: str = "Karaoke",
     screen_width: int = 1280,
@@ -364,15 +330,10 @@ def create_ass_file(
     """
     try:
         available_colors = get_available_colors()
-        primary_color = validate_and_get_color(primary_color, "&H00FFFFFF", available_colors)
-        secondary_color = validate_and_get_color(secondary_color, "&H0000FFFF", available_colors)
-        outline_color = validate_and_get_color(outline_color, "&H00000000", available_colors)
-        shadow_color = validate_and_get_color(shadow_color, "&H00000000", available_colors)
-
-        # Time before first verse => split into title and loader durations
-        first_word_start = verses_data[0]["words"][0]["start"]
-        title_duration   = first_word_start * 0.25
-        loader_duration  = first_word_start * 0.75
+        primary_color = validate_and_get_color(primary_color, "&H0000A5FF", available_colors)
+        secondary_color = validate_and_get_color(secondary_color, "&H00FFFFFF", available_colors)
+        outline_color = validate_and_get_color(outline_color, "&H00FF8080", available_colors)
+        shadow_color = validate_and_get_color(shadow_color, "&H00FF8080", available_colors)
 
         with open(output_path, "w", encoding="utf-8") as file:
             # [Script Info]
@@ -393,7 +354,8 @@ def create_ass_file(
                 outline_color=outline_color,
                 outline_size=outline_size,
                 shadow_color=shadow_color,
-                shadow_size=shadow_size
+                shadow_size=shadow_size,
+                screen_height=screen_height
             )
 
             # [Events]
@@ -402,35 +364,21 @@ def create_ass_file(
             # [Title Event]
             write_title_event(file, title, title_duration, screen_height, fontsize=fontsize+12)
 
-            # [Loader Event]
-            write_loader_event(
-                file,
-                loader_duration,
-                screen_width,
-                screen_height,
-                loader_color=secondary_color,    # Fill...
-                border_color=primary_color,      # Border...
-                start_time=title_duration,
-            )
-
-            # Shift verse times after loader
-            verses_start_time = title_duration + loader_duration
-            for verse in verses_data:
-                verse["start"] += verses_start_time
-                verse["end"]   += verses_start_time
-
             # Write main lyrics
             write_lyrics_events(
                 file,
                 verses_data,
+                screen_width,
+                screen_height,
                 primary_color=primary_color,
                 highlight_color=secondary_color,
                 loader_color=secondary_color,
-                loader_threshold=loader_threshold,    # gap > threshold => show loader
+                loader_threshold=loader_threshold,
                 verses_before=verses_before,
-                verses_after=verses_after
+                verses_after=verses_after,
+                fontsize=fontsize,
             )
-            
+
             # Extend last event if there's leftover audio
             extend_last_event(file, verses_data, audio_duration)
 

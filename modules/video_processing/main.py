@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 def generate_karaoke_video(
     audio_path: Union[str, Path],
     ass_path: Union[str, Path],
+    fonts_path: Union[str, Path],
     output_path: Union[str, Path],
     video_effect: Union[str, Path],
     resolution: str = "1280x720",
@@ -101,7 +102,7 @@ def generate_karaoke_video(
         # pad so that if aspect ratio differs, we fill the entire {width}x{height}
         f"pad=w={width}:h={height}:x='(ow - iw)/2':y='(oh - ih)/2'[bg];"
         # apply .ass subtitles => [vout]
-        f"[bg]subtitles={ass_path}[vout]"
+        f"[bg]subtitles={ass_path}:fontsdir={fonts_path}[vout]"
     )
 
     # We'll map final video from [vout], audio from input #1

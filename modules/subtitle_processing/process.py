@@ -2,6 +2,7 @@
 from pathlib import Path
 from typing import Union
 import logging
+import traceback
 
 # Local Application Imports
 from .utilities import extract_audio_duration
@@ -16,15 +17,15 @@ def process_karaoke_subtitles(
     output_path: Union[str, Path],
     override: bool = False,
     file_name: str = "karaoke_subtitles.ass",
-    font: str = "Arial",
-    fontsize: int = 24,
-    primary_color: str = "White",
-    secondary_color: str = "Yellow",
-    outline_color: str = "Black",
-    outline_size: int = 2,
-    shadow_color: str = "Black",
+    font: str = "Lilita One Regular",
+    fontsize: int = 60,
+    primary_color: str = "Orange",
+    secondary_color: str = "White",
+    outline_color: str = "Light Blue",
+    outline_size: int = 3,
+    shadow_color: str = "Light Blue",
     shadow_size: int = 0,
-    screen_width: int = 1280, 
+    screen_width: int = 1280,
     screen_height: int = 720,
     verses_before: int = 1,
     verses_after: int = 1,
@@ -67,25 +68,29 @@ def process_karaoke_subtitles(
         if audio_duration is None:
             raise ValueError(f"Could not extract audio duration from {audio_duration}")
 
-        create_ass_file(
-            verses_data,
-            output_path=output_file,
-            audio_duration=audio_duration,
-            font=font,
-            fontsize=fontsize,
-            primary_color=primary_color,
-            secondary_color=secondary_color,
-            outline_color=outline_color,
-            outline_size=outline_size,
-            shadow_color=shadow_color,
-            shadow_size=shadow_size,
-            title=title,
-            screen_width=screen_width,
-            screen_height=screen_height,
-            verses_before=verses_before,
-            verses_after=verses_after,
-            loader_threshold=loader_threshold
-        )
+        try:
+            create_ass_file(
+                verses_data,
+                output_path=output_file,
+                audio_duration=audio_duration,
+                font=font,
+                fontsize=fontsize,
+                primary_color=primary_color,
+                secondary_color=secondary_color,
+                outline_color=outline_color,
+                outline_size=outline_size,
+                shadow_color=shadow_color,
+                shadow_size=shadow_size,
+                title=title,
+                screen_width=screen_width,
+                screen_height=screen_height,
+                verses_before=verses_before,
+                verses_after=verses_after,
+                loader_threshold=loader_threshold
+            )
+        except Exception:
+            print(traceback.format_exc())
+            raise
 
         logger.info(f"Karaoke subtitles file created: {output_file}")
 

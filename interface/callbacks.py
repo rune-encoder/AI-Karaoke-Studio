@@ -4,6 +4,8 @@ from pathlib import Path
 import logging
 import json
 
+from modules import get_available_colors
+
 # Local Application Imports
 from .helpers import (
     display_dataframe_from_lyrics,
@@ -244,6 +246,7 @@ def save_fetched_lyrics_callback(
         logger.error(f"Error in save_fetched_lyrics_callback: {e}")
         return (state_fetched_lyrics_json, f"Error: {e}")
 
+
 def save_metadata_callback(state_working_dir, artist_name, song_name):
     """
     Updates the metadata.json with the artist name and song name.
@@ -256,7 +259,7 @@ def save_metadata_callback(state_working_dir, artist_name, song_name):
 
         # Update metadata.json with artist name and song name
         metadata_path = Path(state_working_dir) / "metadata.json"
-        
+
         metadata = load_json_file(metadata_path)
         if not metadata:
             logger.error("Error loading metadata.json")
@@ -274,8 +277,16 @@ def save_metadata_callback(state_working_dir, artist_name, song_name):
         logger.error(f"Error in save_metadata_callback: {e}")
         return
 
+
+def ass_to_css_color(ass_color):
+    hex_part = ass_color[4:]
+    css_color = '#' + hex_part[4:6] + hex_part[2:4] + hex_part[0:2]
+    return css_color
+
+
 def generate_font_preview_callback(
     font: str,
+    fontsize: int,
     primary_color: str,
     secondary_color: str,
     outline_color: str,
@@ -287,17 +298,17 @@ def generate_font_preview_callback(
     """
     Generates the subtitle file and returns a formatted HTML preview of subtitles.
     """
-    preview_text = "Karaoke Subtitle Font Preview"
+    preview_text = "██ Karaoke Subtitle Font Preview"
 
+    available_colors = get_available_colors()
     # Words to highlight (make the second half different color)
     split_index = len(preview_text) // 2
     highlighted_text = (
-        f'<span style="color: {secondary_color.replace("&H00", "#")};">'
+        f'<span style="color: {ass_to_css_color(available_colors[primary_color])};">'
         f'{preview_text[:split_index]}</span>'
-        f'<span style="color: {primary_color.replace("&H00", "#")};">'
+        f'<span style="color: {ass_to_css_color(available_colors[secondary_color])};">'
         f'{preview_text[split_index:]}</span>'
     )
-
     font_format = get_font_format(available_fonts[font])
 
     # Generate preview HTML
@@ -310,7 +321,7 @@ def generate_font_preview_callback(
     </style>
     <div style="
         font-family: {font};
-        font-size: 24px;  /* Fixed size for compact preview */
+        font-size: {fontsize}px;
         font-weight: bold;
         display: flex;
         justify-content: center;
@@ -318,13 +329,13 @@ def generate_font_preview_callback(
         padding: 10px;
         background-color: black;
         text-align: center;
-        color: {primary_color.replace('&H00', '#')};
+        color: {ass_to_css_color(available_colors[primary_color])};
         position: relative;
     ">
         <p style="
             position: relative;
             display: inline-block;
-            color: {primary_color.replace('&H00', '#')};
+            color: {ass_to_css_color(available_colors[primary_color])};
             margin: 0;
             padding: 5px;
         ">
@@ -333,7 +344,7 @@ def generate_font_preview_callback(
                 position: absolute;
                 left: {shadow_size}px;
                 top: {shadow_size}px;
-                color: {shadow_color.replace('&H00', '#')};
+                color: {ass_to_css_color(available_colors[shadow_color])};
                 z-index: -1;
                 white-space: nowrap;
             ">
@@ -342,19 +353,19 @@ def generate_font_preview_callback(
 
             <!-- Correct Outline using Multi-Layered Shadows -->
             <span style="
-                color: {primary_color.replace('&H00', '#')};
+                color: {ass_to_css_color(available_colors[primary_color])};
                 text-shadow: 
-                    -{outline_size}px -{outline_size}px 0 {outline_color.replace('&H00', '#')}, 
-                     {outline_size}px -{outline_size}px 0 {outline_color.replace('&H00', '#')}, 
-                    -{outline_size}px  {outline_size}px 0 {outline_color.replace('&H00', '#')}, 
-                     {outline_size}px  {outline_size}px 0 {outline_color.replace('&H00', '#')};
+                    -{outline_size}px -{outline_size}px 0 {ass_to_css_color(available_colors[outline_color])}, 
+                     {outline_size}px -{outline_size}px 0 {ass_to_css_color(available_colors[outline_color])}, 
+                    -{outline_size}px  {outline_size}px 0 {ass_to_css_color(available_colors[outline_color])}, 
+                     {outline_size}px  {outline_size}px 0 {ass_to_css_color(available_colors[outline_color])};
             ">
                 {highlighted_text}
             </span>
         </p>
     </div>
     """
-    
+
     return preview_html
 
 
@@ -386,7 +397,8 @@ def generate_subtitles_and_video_callback(
     # Additional or override flags
     override_subs: bool,
     output_dir: str,
-    effects_dir: str
+    effects_dir: str,
+    fonts_dir: str
 ):
     """
     1) Generate Karaoke Subtitles (karaoke_subtitles.ass) 
@@ -432,6 +444,7 @@ def generate_subtitles_and_video_callback(
             working_dir=Path(working_dir),
             output_path=Path(output_dir),
             effect_path=effect_video_path,
+            fonts_path=Path(fonts_dir),
 
             # Video Settings
             resolution=resolution,

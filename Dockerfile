@@ -2,7 +2,8 @@ FROM nvidia/cuda:12.8.0-cudnn-runtime-ubuntu22.04 AS base
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && \
+RUN add-apt-repository ppa:tomtomtom/yt-dlp && \
+  apt-get update && \
   apt-get install --no-install-recommends -y \
     tzdata \
     software-properties-common \
@@ -16,6 +17,7 @@ RUN apt-get update && \
     libchromaprint-tools \
     vim \
     bzip2 && \
+    yt-dlp && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/*
 
@@ -55,6 +57,8 @@ RUN source activate && conda activate karaoke_env && \
 
 RUN source activate && conda activate karaoke_env && \
   conda install --download-only -c conda-forge jupyterlab ipywidgets pip -y
+
+RUN yt-dlp -f "(bestvideo/best)[protocol!*=dash]" --external-downloader ffmpeg --external-downloader-args "ffmpeg_i:-t 600" -o /app/effects/KaraokeBG.mp4 https://www.youtube.com/watch?v=eS6TRCGmjc0
 
 FROM download AS install
 

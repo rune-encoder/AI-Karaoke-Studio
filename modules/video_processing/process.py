@@ -19,6 +19,7 @@ def process_karaoke_video(
     working_dir: Union[str, Path],
     output_path: Union[str, Path],
     effect_path: Optional[Union[str, Path]],
+    fonts_path: Union[str, Path],
     resolution: str = "1280x720",
     preset: str = "fast",
     crf: int = 23,
@@ -49,6 +50,7 @@ def process_karaoke_video(
         generate_karaoke_video(
             audio_path=karaoke_audio.as_posix(),
             ass_path=relative_subtitles.as_posix(),
+            fonts_path=fonts_path.as_posix(),
             output_path=relative_output.as_posix(),
             video_effect=effect_path.as_posix() if effect_path is not None else None,
             resolution=resolution,
